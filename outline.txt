@@ -1,0 +1,13 @@
+This is gonna a chrome extension that gonna read the page i am and do a couple of things
+
+-- a blabla score: how much of the stuff here is actually useful or not: maybe from 0: 100
+-- a pareto summary: so a quick syummary with just the actualy important things pareto principle inspired
+-- a bullshit highiliter: identify common bullshits, like sensational news, or news about death , celebrity, tragedy, and stuff that not actionable for me. Gossip about politicia, hate bati, etc... we can keep a document where we learn new categories and keep improving over it
+
+
+Since it's gonna be AI oriented i believe it will have to have a place to insert an ai key. let's configure multiple possible providers, but to start opencode compatibility for use its key
+
+
+also i want some buttons to give my manual score, or a thumbs up/thubmbs down so the application can improve via a memory file(s) ( or something like that. 
+
+I can also give feedback on the score or give text input on why i gave a certain note, so the app keep begin more inteleginte with the time

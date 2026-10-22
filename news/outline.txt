@@ -1,0 +1,32 @@
+i want to do news agreator with some useful filters. It will be a web app 
+
+The premise is that today we have a bunch of news around, bust most of them are useless because
+- are things that we can dealt with
+- that are not gonna help us, or make our life better
+- is useless knowledge
+- is just click bait
+- is just sensasionalist
+- ist just tragedies and death
+
+Some bad examples:
+- a war in a country that i have no direct or indrect effect on me (either in macro or micro)
+- an acident or death of some celebrality
+- some murder history that is "entertainentment" but useless
+- macro economics or politics that i can do nothing about and is orders of magnitude less actionable than some regional stuff that could be useful to know (some macro economics or polticis can be useful depending of course on person, job, etc) 
+- especulation about an elecion that will happen next week - i mean, it will happen anyway, so i have no urgency in seeing hours and hours of people discussing what will happen in this
+- biased discussion that dont have critical thinking, therefore is just propagand
+
+Some good examples: 
+- a new technollogy that is now avaialbe (ex: ai tool) that i actually can use and it will ipmrove my life
+- a free workshop  in my local neighborhoop in culinary that i can take
+- a critical well done discussion about the current economic trends where specialist are discussing and being open for debate and being reasanable 
+
+
+Our system should
+- be able to receive input for us about our profile and stuff that help to decide which news are more useful
+- a score system for each decision in the new it will make (we will be able to filter below certatin score)
+- a way of giving feedback on the score (simple thumbs up/down or even an addition text feedback)
+- improve with the time. so a memory should exist somehow 
+
+I know this will ai based, so we can use opencode key to start. 
+But i want to see if this project is good use case of the typesafe jev tool

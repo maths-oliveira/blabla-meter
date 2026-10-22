@@ -1,0 +1,142 @@
+{
+  "categories": [
+    {
+      "name": "Entertainment",
+      "score": 20
+    },
+    {
+      "name": "Search & News",
+      "score": 50,
+      "news": true
+    },
+    {
+      "name": "News sites",
+      "score": 40,
+      "news": true
+    },
+    {
+      "name": "Social",
+      "score": 40
+    },
+    {
+      "name": "Communication",
+      "score": 60
+    },
+    {
+      "name": "Dev & Work",
+      "score": 90
+    },
+    {
+      "name": "AI Tools",
+      "score": 85
+    },
+    {
+      "name": "Reading & Learning",
+      "score": 75
+    },
+    {
+      "name": "Shopping",
+      "score": 45
+    },
+    {
+      "name": "Finance & Life Admin",
+      "score": 70
+    },
+    {
+      "name": "Health",
+      "score": 70
+    },
+    {
+      "name": "Transport & Maps",
+      "score": 70
+    },
+    {
+      "name": "Accounts & Login",
+      "score": 70
+    },
+    {
+      "name": "Browser (unsplit)",
+      "score": 40
+    },
+    {
+      "name": "Other",
+      "score": 55
+    },
+    {
+      "name": "System (excluded)",
+      "score": 50,
+      "exclude": true
+    }
+  ],
+  "rules": [
+    {
+      "match": "^com\\.brave\\.browser$|^com\\.android\\.chrome$|unattributed",
+      "cat": "Browser (unsplit)"
+    },
+    {
+      "match": "^youtube\\.com|^youtu\\.be|spotify|twitch\\.tv|netflix|primevideo|disneyplus|9gag|patreon|imdb|letterboxd|^com\\.google\\.android\\.youtube",
+      "cat": "Entertainment"
+    },
+    {
+      "match": "^google\\.com › Search|^com\\.google\\.android\\.googlequicksearchbox$|^search\\.brave\\.com|^duckduckgo",
+      "cat": "Search & News"
+    },
+    {
+      "match": "news\\.ycombinator|noticias|globo\\.com|g1\\.|uol\\.com|folha|estadao|exame\\.com|cnnbrasil|bbc\\.|poder360|metropoles|news\\.google",
+      "cat": "News sites"
+    },
+    {
+      "match": "linkedin|instagram|facebook|^x\\.com|twitter|reddit|tiktok|threads\\.net",
+      "cat": "Social"
+    },
+    {
+      "match": "mail\\.google|mail\\.proton|proton\\.me|whatsapp|telegram|discord|slack",
+      "cat": "Communication"
+    },
+    {
+      "match": "^localhost|^127\\.0\\.0\\.1|supabase|opencode|github|gitlab|mermaid\\.live|stackoverflow|vercel|npmjs|pypi|docs\\.|^local files$|developer\\.|cloudflare|workers\\.dev|stripe\\.com|^192\\.168\\.|drive\\.google|com\\.google\\.android\\.apps\\.docs|canva\\.com|apinator|adguard|labelbox|dataannotation|outlier\\.ai|alignerr",
+      "cat": "Dev & Work"
+    },
+    {
+      "match": "chatgpt|openai|claude\\.ai|anthropic|gemini\\.google|perplexity|deepseek|mistral\\.ai|huggingface",
+      "cat": "AI Tools"
+    },
+    {
+      "match": "wikipedia|medium\\.com|substack|arxiv|goodreads|coursera|udemy|khanacademy",
+      "cat": "Reading & Learning"
+    },
+    {
+      "match": "amazon\\.|mercadolivre|mercadolibre|shopee|aliexpress|magazineluiza|kabum|play\\.google\\.com|^com\\.android\\.vending$",
+      "cat": "Shopping"
+    },
+    {
+      "match": "\\.bb\\.|^com\\.nu\\.|nubank|itau|caixa|gov\\.br|serasa|c6bank",
+      "cat": "Finance & Life Admin"
+    },
+    {
+      "match": "hospital|saude|unimed|drogasil|raiadrogasil|rededor|fleury|dasa\\.com|paguemenos|drogaria",
+      "cat": "Health"
+    },
+    {
+      "match": "google\\.com › Maps|maps\\.google|com\\.google\\.android\\.apps\\.maps|taxis99|ubercab|uber\\.com|waze",
+      "cat": "Transport & Maps"
+    },
+    {
+      "match": "accounts\\.google|login\\.|auth\\.|sso\\.|idp\\.|myaccount\\.google",
+      "cat": "Accounts & Login"
+    },
+    {
+      "match": "launcher|^com\\.miui\\.|^com\\.android\\.(settings|camera|intentresolver|systemui)|permissioncontroller|deskclock|wellbeing|^android$|^com\\.google\\.android\\.gms$",
+      "cat": "System (excluded)"
+    }
+  ],
+  "items": {
+    "all": {},
+    "desktop": {},
+    "phone": {}
+  },
+  "scores": {
+    "desktop": {},
+    "phone": {}
+  }
+}

@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# Start the news ranker on http://127.0.0.1:8805 (or ../run for bridge + news) (override with --port)
+cd "$(dirname "$(readlink -f "$0")")" && exec python3 app.py "$@"

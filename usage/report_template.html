@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Usage Report v2</title>
+<style>
+:root{--bg:#0f1115;--card:#1a1e26;--card2:#222836;--in:#12151c;--txt:#e8eaf0;--mut:#9aa3b2;--acc:#5b9bff;--good:#3ddc84;--warn:#ffb84d;--bad:#ff6b6b;--line:#2a3140;--dsk:#5b9bff;--phn:#f78fb3}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--txt);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+.wrap{padding:20px 28px}@media(max-width:700px){.wrap{padding:14px 16px}}
+header{display:flex;flex-wrap:wrap;gap:16px;align-items:end;justify-content:space-between}
+h1{margin:0;font-size:26px}h2{margin:0 0 8px;font-size:19px}h3{margin:14px 0 6px;font-size:15px}
+.sub{color:var(--mut);margin:6px 0 0;font-size:14px;max-width:1300px}
+.mut{color:var(--mut);font-size:13px}
+.bar{position:sticky;top:0;z-index:5;background:rgba(15,17,21,.94);backdrop-filter:blur(6px);border-bottom:1px solid var(--line);padding:10px 0;margin:12px 0 4px;display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}
+.seg button{background:var(--card2);color:var(--txt);border:0;padding:7px 13px;cursor:pointer;font-size:13px}
+.seg button.on{background:var(--acc);color:#0b1020;font-weight:800}
+button.btn{background:var(--card2);color:var(--txt);border:1px solid var(--line);border-radius:999px;padding:7px 13px;cursor:pointer;font-size:13px}
+input[type=date],input[type=search],input[type=number],select{background:var(--in);color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:6px 8px;font:inherit;font-size:13px}
+input[type=number]{width:62px}
+.grid6{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:12px;margin-top:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}
+.kpi{font-size:26px;font-weight:800}.kpi small{font-size:12px;color:var(--mut);font-weight:500;display:block;margin-top:4px}
+.sec{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-top:16px}
+.cols2{display:grid;grid-template-columns:1fr 1fr;gap:20px}@media(max-width:1100px){.cols2{grid-template-columns:1fr}}
+.row{display:grid;grid-template-columns:minmax(150px,300px) 1fr minmax(110px,150px);gap:12px;align-items:center;padding:6px 0;border-bottom:1px dashed #242b3a;font-size:13px}
+.row.click{cursor:pointer}.row.click:hover{background:#161a22}
+.track{background:var(--in);border-radius:6px;height:14px;overflow:hidden;display:flex}
+.track i{display:block;height:100%}
+.d{background:var(--dsk)}.p{background:var(--phn)}
+.lg{display:inline-flex;align-items:center;gap:6px;margin-right:14px;font-size:13px;color:var(--mut)}.lg i{width:10px;height:10px;border-radius:3px;display:inline-block}
+.chip{display:inline-block;font-size:11px;padding:1px 8px;border-radius:999px;border:1px solid var(--line);color:var(--mut);margin-left:6px;white-space:nowrap}
+.chip.dev-d{border-color:var(--dsk);color:var(--dsk)}.chip.dev-p{border-color:var(--phn);color:var(--phn)}
+.right{text-align:right}.ell{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.score-big{font-size:42px;font-weight:900}
+.gauge{height:16px;background:var(--in);border-radius:999px;overflow:hidden;margin-top:8px}.gauge>div{height:100%;background:linear-gradient(90deg,var(--bad),var(--warn),var(--good))}
+.heat{display:grid;grid-template-columns:40px repeat(24,1fr);gap:3px;font-size:10px;color:var(--mut)}
+.hc{aspect-ratio:1/1;border-radius:4px;min-height:14px;display:flex;align-items:center;justify-content:center;font-size:9px;color:#0b1020}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;padding:6px;border-bottom:1px solid var(--line);vertical-align:middle}
+th{color:var(--mut);font-size:11px;text-transform:uppercase;letter-spacing:.06em;position:sticky;top:0;background:var(--card)}
+.scroll{max-height:640px;overflow:auto}
+.detail{background:var(--in);border-radius:10px;padding:14px;margin:8px 0 12px}
+.warnbox{border-left:4px solid var(--warn);background:var(--in);padding:10px 14px;border-radius:0 10px 10px 0;margin-top:10px;font-size:13px}
+svg text{fill:var(--mut);font-size:10px}
+.ov{color:var(--phn);font-weight:700}
+.cols3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px}@media(max-width:1100px){.cols3{grid-template-columns:1fr}}
+.rec{border-left:4px solid var(--acc);padding:10px 14px;background:var(--in);border-radius:0 10px 10px 0;margin:10px 0;font-size:14px}
+.rec.warn{border-color:var(--warn)}.rec.bad{border-color:var(--bad)}.rec.good{border-color:var(--good)}
+#recs td{font-size:14px}
+#catTable select{max-width:150px}#catTable td{padding:4px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+<div>
+<h1>🕒 Where your time goes — desktop + phone</h1>
+<p class="sub" id="coverage"></p>
+</div>
+<div class="mut" id="gen"></div>
+</header>
+
+<div class="bar">
+<div class="seg" id="devSeg"><button data-v="all" class="on">All devices</button><button data-v="desktop">🖥 Desktop</button><button data-v="phone">📱 Phone</button></div>
+<div class="seg" id="rangeSeg"><button data-v="7">7d</button><button data-v="30">30d</button><button data-v="phoneapps">Phone-app window</button><button data-v="all" class="on">All</button></div>
+<span class="mut"><input type="date" id="from"> → <input type="date" id="to"></span>
+<div class="seg" id="metricSeg"><button data-v="time" class="on">time</button><button data-v="visits">visits / launches</button></div>
+<label class="mut"><input type="checkbox" id="newsEnt"> News counts as entertainment</label>
+</div>
+
+<div class="grid6" id="kpis"></div>
+
+<div class="sec">
+<h2>1 · Categories — per-day average, split by device</h2>
+<p class="mut"><span class="lg"><i class="d"></i>Desktop</span><span class="lg"><i class="p"></i>Phone</span> Each source is averaged over its own covered days in the selected range, then summed. So a phone with 9 days of app data and a desktop with 90 days are comparable per day.</p>
+<div id="cats"></div>
+<div class="cols2" style="margin-top:14px">
+<div><h3>Weighted usefulness score</h3><div class="score-big" id="scoreBig">–</div><div class="gauge"><div id="gauge"></div></div><p class="mut" id="scoreEx"></p></div>
+<div><h3>Score by device</h3><div id="scoreDev"></div></div>
+</div>
+</div>
+
+<div class="sec">
+<h2>2 · Top sites & apps — click a row for what you actually looked at</h2>
+<div id="top"></div>
+</div>
+
+<div class="sec">
+<h2>3 · Breakdowns — YouTube, Google, dev & work, communication</h2>
+<p class="mut">The big categories split into their parts. Desktop YouTube and Google are split by page type; phone YouTube can't be (no URL path on the phone). Avg per visit shows the style of use: long stays vs quick swipes. Searches are ranked by time over the whole history.</p>
+<div id="kpiYt" class="grid6" style="margin:0 0 10px"></div>
+<div class="cols2" id="breaks"></div>
+<div class="cols2" style="margin-top:6px"><div><h3>Top YouTube searches by time</h3><div id="ytTerms"></div></div><div><h3>Top Google searches by time</h3><div id="gTerms"></div></div></div>
+</div>
+
+<div class="sec">
+<h2>4 · Daily trend by device</h2>
+<p class="mut">Hours per day. Phone bars appear only on days covered by phone data.</p>
+<div id="trend"></div>
+</div>
+
+<div class="sec">
+<h2>5 · Rhythm — average minutes per weekday × hour</h2>
+<div class="heat" id="heat"></div>
+<p class="mut" id="heatNote"></p>
+<div class="cols2" style="margin-top:14px">
+<div><h3>Binge days — what drove each spike?</h3>
+<p class="mut">Days with the most time in the selected range and devices. “Waste” = time in categories scored 40 or less (edit scores in §9).</p>
+<table id="binge"></table></div>
+<div><h3>What the pattern says</h3><div id="pattern"></div></div>
+</div>
+</div>
+
+<div class="sec">
+<h2>6 · All recommendations — every rule with per-day cost & saving</h2>
+<p class="mut">Costs are measured per-day averages for the selected range and devices. Savings assume ~30% compliance unless stated. These are the defaults the extension should ship with; you tune the thresholds.</p>
+<table id="recs"></table>
+<div id="recSum"></div>
+</div>
+
+<div class="sec">
+<h2>7 · Extension blueprint (from outline.txt)</h2>
+<div class="cols3">
+<div class="card"><b>1. Track</b><p class="mut">Use an active-tab timer + <code>chrome.history</code>, not History durations (they run on in background tabs; this report has to collapse overlaps). Log per URL: domain, path type (e.g. <code>/shorts/*</code> vs <code>/watch</code>), active seconds, hour.</p></div>
+<div class="card"><b>2. Score</b><p class="mut">Ship the category table from §1 / §9 as defaults, with per-device overrides. Split huge domains by path (Shorts 10, Watch 35, Search 40, localhost 95). Let the user move News → Entertainment (the toggle above). Recompute the weighted score live.</p></div>
+<div class="card"><b>3. Report + Block</b><p class="mut">Weekly card (see §6). Nudges: Shorts quota, Watch session cap, wind-down after 23h, news cap 20 min/day. You already own BlockTube/DF-Tube, so reuse their block lists.</p></div>
+</div>
+<p class="mut">Phone: Brave Android has no extensions, so the extension can't run there. Phone data comes from this repo's adb collectors. On-device nudges would need Android's Digital Wellbeing app timers (e.g. on Brave / YouTube) or a launcher-level limit.</p>
+</div>
+
+<div class="sec" id="yearSec">
+<h2>8 · 📱 Phone — year to date (exact Android totals)</h2>
+<p class="mut" id="yearNote"></p>
+<div class="cols2"><div><h3>By category</h3><div id="yearCats"></div></div><div><h3>Top apps</h3><div id="yearApps"></div></div></div>
+</div>
+
+<div class="sec">
+<h2>9 · Categorize — per device</h2>
+<p class="mut">The <b>All devices</b> column sets the category everywhere. The <b>Desktop</b> and <b>Phone</b> columns override it for just that device. For example, YouTube on desktop can count as Reading & Learning while YouTube on the phone stays Entertainment. Edits are saved in this browser. <b>Export</b> writes a <code>categories.json</code>; drop it into the repo so the next <code>build_report.py</code> starts from it.</p>
+<div class="btns" style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0">
+<input type="search" id="q" placeholder="filter sites / apps…">
+<select id="catFilter"><option value="">any category</option></select>
+<button class="btn" id="export">⬇ Export categories.json</button>
+<button class="btn" id="reset">Reset to file defaults</button>
+</div>
+<div class="cols2" style="grid-template-columns:minmax(0,3fr) minmax(0,2fr)">
+<div class="scroll"><table id="catTable"></table></div>
+<div>
+<h3>Scores (0 = waste, 100 = fully useful) — blank device cell = use default</h3>
+<table id="scoreTable"></table>
+</div>
+</div>
+</div>
+
+<div class="sec">
+<h2>How the numbers are made</h2>
+<div id="method" class="mut"></div>
+</div>
+</div>
+
+<script>
+const D=/*__DATA__*/null;
+const SRC=D.sources, DAYS=D.days, ITEMS=D.items;
+const LS='cchrome.cfg.v2';
+const clone=o=>JSON.parse(JSON.stringify(o));
+let cfg=clone(D.config);
+try{const s=localStorage.getItem(LS);if(s){const u=JSON.parse(s);cfg.items=u.items||cfg.items;cfg.scores=u.scores||cfg.scores;(u.catScores||[]).forEach(([n,v])=>{const c=cfg.categories.find(x=>x.name===n);if(c)c.score=v;});}}catch(e){}
+const save=()=>{try{localStorage.setItem(LS,JSON.stringify({items:cfg.items,scores:cfg.scores,catScores:cfg.categories.map(c=>[c.name,c.score])}));}catch(e){}};
+const st={dev:'all',from:null,to:null,metric:'time',newsEnt:false,open:null};
+const DEVS=['desktop','phone'];
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ---------- categories ---------- */
+let rules=[];
+function compileRules(){rules=cfg.rules.map(r=>({re:new RegExp(r.match,'i'),cat:r.cat,dev:r.device}));catCache={};}
+let catCache={};
+function catOfKey(k,dev){
+  let c=cfg.items[dev]?.[k]??cfg.items.all?.[k];
+  if(!c){const r=rules.find(r=>(!r.dev||r.dev===dev)&&r.re.test(k));c=r?r.cat:'Other';}
+  return c;
+}
+function catOf(i,dev){const ck=i+'|'+dev;return ck in catCache?catCache[ck]:(catCache[ck]=catOfKey(ITEMS[i].k,dev));}
+const catMeta=n=>cfg.categories.find(c=>c.name===n)||{name:n,score:55};
+function effCat(i,dev){const c=catOf(i,dev);return st.newsEnt&&catMeta(c).news?'Entertainment':c;}
+function scoreOf(cat,dev){const o=cfg.scores[dev]?.[cat];return o!=null&&o!==''?+o:catMeta(cat).score;}
+const excluded=c=>!!catMeta(c).exclude;
+
+/* ---------- range & aggregation ---------- */
+function srcDays(s){ // days of source s inside selected range
+  if(!s) return 0; const a=s.from>st.from?s.from:st.from, b=s.to<st.to?s.to:st.to;
+  return a>b?0:Math.round((new Date(b)-new Date(a))/864e5)+1;
+}
+function activeSrc(){return SRC.map((s,j)=>s&&(st.dev==='all'||s.dev===st.dev)&&srcDays(s)>0?j:-1).filter(j=>j>=0);}
+function filtered(){
+  const act=new Set(activeSrc()), f=st.from, t=st.to;
+  return D.rows.filter(r=>act.has(r[0])&&DAYS[r[2]]>=f&&DAYS[r[2]]<=t);
+}
+// rows: [src,item,day,hour,secs,visits,est]
+function perDay(rows,keyFn,skipExcluded=true){
+  const out=new Map(); const nd=SRC.map(srcDays);
+  for(const r of rows){
+    const dev=SRC[r[0]].dev; if(skipExcluded&&excluded(effCat(r[1],dev))) continue;
+    const k=keyFn(r,dev); let o=out.get(k); if(!o){o={desktop:0,phone:0,vd:0,vp:0};out.set(k,o);}
+    const n=nd[r[0]]; if(dev==='desktop'){o.desktop+=r[4]/n;o.vd+=r[5]/n;}else{o.phone+=r[4]/n;o.vp+=r[5]/n;}
+  }
+  return out;
+}
+const val=o=>st.metric==='time'?o.desktop+o.phone:o.vd+o.vp;
+const fmt=s=>{s=Math.round(s);if(s<60)return s+'s';const m=Math.round(s/60);return m<60?m+' min':Math.floor(m/60)+'h'+String(m%60).padStart(2,'0');};
+const fmtV=v=>v>=10?Math.round(v).toLocaleString():v.toFixed(1);
+const disp=o=>st.metric==='time'?fmt(o.desktop+o.phone)+'/day':fmtV(o.vd+o.vp)+'/day';
+function stack(o,max){
+  const d=st.metric==='time'?o.desktop:o.vd, p=st.metric==='time'?o.phone:o.vp;
+  return `<div class="track" title="desktop ${st.metric==='time'?fmt(o.desktop):fmtV(o.vd)} · phone ${st.metric==='time'?fmt(o.phone):fmtV(o.vp)}"><i class="d" style="width:${d/max*100}%"></i><i class="p" style="width:${p/max*100}%"></i></div>`;
+}
+const devSplit=o=>{const d=o.desktop,p=o.phone;return (d?`<span class="chip dev-d">🖥 ${fmt(d)}</span>`:'')+(p?`<span class="chip dev-p">📱 ${fmt(p)}</span>`:'');};
+
+/* ---------- render ---------- */
+function render(){
+  const rows=filtered();
+  renderYear();renderKpis(rows);renderCats(rows);renderTop(rows);renderBreakdowns(rows);renderBinge(rows);renderRecs(rows);renderTrend(rows);renderHeat(rows);renderCatTable(rows);renderScoreTable();renderCoverage();
+}
+function renderYear(){
+  const Y=D.phoneYear, sec=document.getElementById('yearSec');
+  if(!Y||st.dev==='desktop'){sec.style.display='none';return;} sec.style.display='';
+  const cats=new Map();let tot=0;
+  for(const [k,l,s] of Y.apps){let c=catOfKey(k,'phone');if(st.newsEnt&&catMeta(c).news)c='Entertainment';if(excluded(c))continue;cats.set(c,(cats.get(c)||0)+s);tot+=s;}
+  const cm=[...cats].sort((a,b)=>b[1]-a[1]),mx=Math.max(1,...cm.map(x=>x[1]));
+  const bar=(lab,s,m,sub)=>`<div class="row"><div class="ell">${lab}</div><div class="track"><i class="p" style="width:${s/m*100}%"></i></div><div class="right"><b>${fmt(s/Y.days)}/day</b><br><span class="mut">${sub}</span></div></div>`;
+  document.getElementById('yearCats').innerHTML=cm.map(([c,s])=>bar(`<b>${esc(c)}</b>`,s,mx,Math.round(s/3600)+'h total')).join('');
+  const apps=Y.apps.filter(([k])=>!excluded(catOfKey(k,'phone'))).slice(0,15),am=Math.max(1,...apps.map(a=>a[2]));
+  document.getElementById('yearApps').innerHTML=apps.map(([k,l,s])=>bar(`<b>${esc(l)}</b><br><span class="mut">${esc(catOfKey(k,'phone'))}</span>`,s,am,Math.round(s/3600)+'h total')).join('');
+  document.getElementById('yearNote').innerHTML=`Android's yearly bucket, <b>${Y.from} → ${Y.to}</b> (${Y.days} days): <b>${fmt(tot/Y.days)}/day</b> on non-system apps. Only per-app totals exist this far back, so browsers stay unsplit here. The phone's Brave was reinstalled on Sep 20 (older history lost) and Chrome was removed, so page-level detail starts Sep 20. This section ignores the date range above.`;
+}
+function renderCoverage(){
+  const lbl={desktop:'🖥 Desktop Brave + Brave Origin history','phone-apps':'📱 Phone apps (Android usage stats, exact)','phone-web':'📱 Phone Brave history (visits exact, time estimated)'};
+  document.getElementById('coverage').innerHTML=SRC.filter(Boolean).map(s=>`${lbl[s.id]}: <b>${s.from} → ${s.to}</b> (${srcDays(s)} days in range)`).join('<br>')+
+   (D.phoneWeb.complete?'':'<br><span style="color:var(--warn)">Phone history scrape was incomplete when built. Rebuild after it finishes.</span>');
+  document.getElementById('gen').textContent='built '+D.generated.replace('T',' ');
+}
+function renderKpis(rows){
+  const all=perDay(rows,()=>0).get(0)||{desktop:0,phone:0,vd:0,vp:0};
+  const cats=perDay(rows,(r,dev)=>effCat(r[1],dev));
+  const ent=cats.get('Entertainment')||{desktop:0,phone:0};
+  const late=perDay(rows.filter(r=>r[3]>=23||(r[3]>=0&&r[3]<4)),()=>0).get(0)||{desktop:0,phone:0};
+  const hourKnown=perDay(rows.filter(r=>r[3]>=0),()=>0).get(0)||{desktop:0,phone:0};
+  const {score}=weighted(rows);
+  const k=[[fmt(all.desktop+all.phone),'total per day'],[fmt(all.desktop),'🖥 desktop per day'],[fmt(all.phone),'📱 phone per day'],
+    [fmt(ent.desktop+ent.phone),`entertainment/day${st.newsEnt?' (+news)':''} · ${Math.round((ent.desktop+ent.phone)/Math.max(1,all.desktop+all.phone)*100)}%`],
+    [Math.round((late.desktop+late.phone)/Math.max(1,hourKnown.desktop+hourKnown.phone)*100)+'%','of time between 23h and 04h'],
+    [isNaN(score)?'–':Math.round(score)+'/100','weighted usefulness']];
+  document.getElementById('kpis').innerHTML=k.map(([a,b])=>`<div class="card"><div class="kpi">${a}<small>${b}</small></div></div>`).join('');
+}
+function weighted(rows){
+  let num=0,den=0;const byDev={desktop:[0,0],phone:[0,0]};
+  perDay(rows,(r,dev)=>dev+'|'+effCat(r[1],dev)).forEach((o,k)=>{const [dev,cat]=k.split('|');const s=o.desktop+o.phone,sc=scoreOf(cat,dev);num+=s*sc;den+=s;byDev[dev][0]+=s*sc;byDev[dev][1]+=s;});
+  return {score:num/den,byDev,den};
+}
+function renderCats(rows){
+  const m=[...perDay(rows,(r,dev)=>effCat(r[1],dev))].sort((a,b)=>val(b[1])-val(a[1]));
+  const max=Math.max(1,...m.map(x=>val(x[1])));
+  document.getElementById('cats').innerHTML=m.map(([c,o])=>{
+    const sd=scoreOf(c,'desktop'),sp=scoreOf(c,'phone');
+    return `<div class="row"><div><b>${esc(c)}</b><br><span class="mut">score ${sd===sp?sd:`🖥 ${sd} · 📱 ${sp}`}</span></div>${stack(o,max)}<div class="right"><b>${disp(o)}</b><br>${devSplit(o)}</div></div>`;}).join('');
+  const w=weighted(rows);
+  document.getElementById('scoreBig').textContent=isNaN(w.score)?'–':Math.round(w.score)+' / 100';
+  document.getElementById('gauge').style.width=(w.score||0)+'%';
+  document.getElementById('scoreEx').textContent=`Σ(time × score) / Σ(time) over ${fmt(w.den)} per day. Change scores or categories in §9 and everything recomputes.`;
+  document.getElementById('scoreDev').innerHTML=DEVS.map(d=>{const [n,dn]=w.byDev[d];return dn?`<div class="row"><div>${d==='desktop'?'🖥 Desktop':'📱 Phone'}</div><div class="gauge" style="margin:0"><div style="width:${n/dn}%"></div></div><div class="right"><b>${Math.round(n/dn)}</b> / 100</div></div>`:'';}).join('');
+}
+function renderTop(rows){
+  const m=[...perDay(rows,r=>r[1])].sort((a,b)=>val(b[1])-val(a[1])).slice(0,40);
+  const max=Math.max(1,...m.map(x=>val(x[1])));
+  document.getElementById('top').innerHTML=m.map(([i,o])=>{
+    const it=ITEMS[i], cats=[...new Set(DEVS.filter(d=>o[d]||(d==='desktop'?o.vd:o.vp)).map(d=>effCat(i,d)))];
+    return `<div class="row click" data-i="${i}"><div class="ell"><b>${esc(it.l)}</b>${it.t==='app'?'<span class="chip">app</span>':''}<br><span class="mut">${cats.map(esc).join(' / ')}</span></div>${stack(o,max)}<div class="right"><b>${disp(o)}</b><br>${devSplit(o)}</div></div>${st.open==i?detail(i,rows):''}`;}).join('');
+  document.querySelectorAll('#top .row.click').forEach(el=>el.onclick=()=>{st.open=st.open==el.dataset.i?null:el.dataset.i;renderTop(filtered());});
+}
+function detail(i,rows){
+  const T=D.titles[i]||{}, Q=D.terms[i]||{};
+  const list=(arr,unit)=>arr&&arr.length?`<table>${arr.map(([t,s,v])=>`<tr><td class="ell" style="max-width:420px">${esc(t)}</td><td class="right mut">${fmt(s)}</td><td class="right mut">${v} ${unit}</td></tr>`).join('')}</table>`:'<p class="mut">–</p>';
+  const cols=DEVS.filter(d=>(T[d]||Q[d])&&(st.dev==='all'||st.dev===d)).map(d=>`<div><h3>${d==='desktop'?'🖥 Desktop':'📱 Phone'}</h3>${Q[d]?'<b class="mut">Top searches</b>'+list(Q[d],'×'):''}${T[d]?'<b class="mut">Top pages (whole history, by time)</b>'+list(T[d],'visits'):''}</div>`).join('');
+  return `<div class="detail"><div class="cols2">${cols||'<p class="mut">No page titles for this item (apps have none).</p>'}</div></div>`;
+}
+function renderTrend(rows){
+  const d=new Map();
+  for(const r of rows){const dev=SRC[r[0]].dev;if(excluded(effCat(r[1],dev)))continue;let o=d.get(r[2]);if(!o){o={desktop:0,phone:0};d.set(r[2],o);}o[dev]+=st.metric==='time'?r[4]/3600:r[5];}
+  const idx=DAYS.map((x,i)=>i).filter(i=>DAYS[i]>=st.from&&DAYS[i]<=st.to);
+  if(!idx.length){document.getElementById('trend').innerHTML='';return;}
+  const W=Math.max(600,idx.length*12),H=180,pad=24,bw=(W-pad)/idx.length;
+  const max=Math.max(1,...idx.map(i=>{const o=d.get(i)||{desktop:0,phone:0};return o.desktop+o.phone;}));
+  let s=`<svg viewBox="0 0 ${W} ${H+18}" style="width:100%;height:auto" role="img" aria-label="daily usage by device">`;
+  [0.5,1].forEach(f=>{const y=H-(H-10)*f;s+=`<line x1="${pad}" x2="${W}" y1="${y}" y2="${y}" stroke="#2a3140"/><text x="0" y="${y+3}">${(max*f).toFixed(st.metric==='time'?0:0)}${st.metric==='time'?'h':''}</text>`;});
+  idx.forEach((i,n)=>{const o=d.get(i)||{desktop:0,phone:0};const x=pad+n*bw;const hd=(H-10)*o.desktop/max,hp=(H-10)*o.phone/max;
+    s+=`<g><title>${DAYS[i]} · desktop ${o.desktop.toFixed(1)} · phone ${o.phone.toFixed(1)}</title><rect x="${x}" y="${H-hd}" width="${bw*0.8}" height="${hd}" fill="var(--dsk)"/><rect x="${x}" y="${H-hd-hp}" width="${bw*0.8}" height="${hp}" fill="var(--phn)"/></g>`;
+    if(n%Math.ceil(idx.length/12)===0)s+=`<text x="${x}" y="${H+14}">${DAYS[i].slice(5)}</text>`;});
+  document.getElementById('trend').innerHTML=s+'</svg>';
+}
+function renderHeat(rows){
+  const cnt=SRC.map(s=>{const c=[0,0,0,0,0,0,0];if(!s||!srcDays(s))return c;const a=s.from>st.from?s.from:st.from,b=s.to<st.to?s.to:st.to;for(let t=new Date(a+'T12:00');t<=new Date(b+'T12:00');t.setDate(t.getDate()+1))c[(t.getDay()+6)%7]++;return c;});
+  const g=Array.from({length:7},()=>new Array(24).fill(0));let noHour=0,all=0;
+  for(const r of rows){const dev=SRC[r[0]].dev;if(excluded(effCat(r[1],dev)))continue;const v=st.metric==='time'?r[4]:r[5];all+=v;if(r[3]<0){noHour+=v;continue;}
+    const wd=(new Date(DAYS[r[2]]+'T12:00').getDay()+6)%7;const n=cnt[r[0]][wd];if(n)g[wd][r[3]]+=v/n;}
+  const max=Math.max(1,...g.flat());const W=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  let h='<div></div>'+Array.from({length:24},(_,i)=>`<div style="text-align:center">${i}</div>`).join('');
+  g.forEach((row,w)=>{h+=`<div><b style="color:var(--txt)">${W[w]}</b></div>`+row.map((v,hr)=>{const a=0.06+0.94*v/max;const lab=st.metric==='time'?Math.round(v/60)+' min':v.toFixed(1);return `<div class="hc" title="${W[w]} ${hr}h · ${lab}/day" style="background:rgba(91,155,255,${a.toFixed(2)})">${v/max>0.7?(st.metric==='time'?Math.round(v/60):Math.round(v)):''}</div>`;}).join('');});
+  document.getElementById('heat').innerHTML=h;
+  document.getElementById('heatNote').textContent=`Average ${st.metric==='time'?'minutes':'visits'} per weekday-hour, summed over devices, so an hour can exceed 60 min when you use both at once. Brightest cells show the number.`+(noHour?` ${Math.round(noHour/all*100)}% of this range has no hour: phone browsing older than the phone's usage-stats window, whose day is known but not its time. It is left out here but counted everywhere else.`:'');
+}
+function catOptions(sel,inherit){return (inherit?`<option value="">= ${esc(inherit)}</option>`:'')+cfg.categories.map(c=>`<option ${c.name===sel?'selected':''}>${esc(c.name)}</option>`).join('');}
+function renderCatTable(rows){
+  const q=document.getElementById('q').value.toLowerCase(), cf=document.getElementById('catFilter').value;
+  const saved=st.newsEnt;st.newsEnt=false; // edit raw categories, not the toggled view
+  const m=[...perDay(rows,r=>r[1],false)].sort((a,b)=>(b[1].desktop+b[1].phone)-(a[1].desktop+a[1].phone))
+    .filter(([i])=>(!q||ITEMS[i].l.toLowerCase().includes(q))&&(!cf||DEVS.some(d=>catOf(i,d)===cf))).slice(0,200);
+  let h='<tr><th>Site / app</th><th>Time/day</th><th>All devices</th><th>🖥 Desktop</th><th>📱 Phone</th></tr>';
+  for(const [i,o] of m){
+    const k=ITEMS[i].k;const base=cfg.items.all[k]??(rules.find(r=>!r.dev&&r.re.test(k))?.cat||'Other');
+    const cell=d=>{const has=d==='desktop'?o.desktop||o.vd:o.phone||o.vp;if(!has)return '<td class="mut">–</td>';const ov=cfg.items[d][k];return `<td><select data-k="${esc(k)}" data-d="${d}" class="${ov?'ov':''}">${catOptions(ov,base)}</select></td>`;};
+    h+=`<tr><td class="ell" style="max-width:260px" title="${esc(k)}">${esc(ITEMS[i].l)}${ITEMS[i].t==='app'?'<span class="chip">app</span>':''}</td><td class="mut">${fmt(o.desktop+o.phone)}</td><td><select data-k="${esc(k)}" data-d="all">${catOptions(base)}</select></td>${cell('desktop')}${cell('phone')}</tr>`;
+  }
+  st.newsEnt=saved;
+  const t=document.getElementById('catTable');t.innerHTML=h;
+  t.querySelectorAll('select').forEach(s=>s.onchange=()=>{const {k,d}=s.dataset;if(s.value)cfg.items[d][k]=s.value;else delete cfg.items[d][k];catCache={};save();render();});
+}
+function renderScoreTable(){
+  let h='<tr><th>Category</th><th>Default</th><th>🖥 Desktop</th><th>📱 Phone</th></tr>';
+  cfg.categories.forEach((c,ci)=>{h+=`<tr><td>${esc(c.name)}${c.news?'<span class="chip">news</span>':''}${c.exclude?'<span class="chip">excluded</span>':''}</td><td><input type="number" min="0" max="100" data-c="${ci}" data-d="" value="${c.score}"></td>`+
+    DEVS.map(d=>`<td><input type="number" min="0" max="100" placeholder="${c.score}" data-c="${ci}" data-d="${d}" value="${cfg.scores[d]?.[c.name]??''}"></td>`).join('')+'</tr>';});
+  const t=document.getElementById('scoreTable');t.innerHTML=h;
+  t.querySelectorAll('input').forEach(inp=>inp.onchange=()=>{const c=cfg.categories[inp.dataset.c],d=inp.dataset.d;
+    if(!d)c.score=+inp.value;else if(inp.value==='')delete cfg.scores[d][c.name];else cfg.scores[d][c.name]=+inp.value;save();render();});
+}
+function renderMethod(){
+  const pw=D.phoneWeb;
+  document.getElementById('method').innerHTML=`<ul>
+<li><b>Desktop</b>: Brave (old profile + archived <code>brave_history.db</code>) and Brave Origin, merged; exact duplicates (same URL + microsecond timestamp, i.e. imported) dropped. Time = Chromium <i>visit_duration</i> capped at 10 min/visit, so background tabs still inflate it somewhat. YouTube and Google are split by path (Shorts / Watch / Search / Maps).</li>
+<li><b>Phone apps</b>: <code>adb shell dumpsys usagestats</code>. Foreground sessions are rebuilt from app resume/pause events and closed on screen-off, so this time is exact. Android keeps only about 9 days of this detail; each <code>build_report.py --collect</code> saves a snapshot so history accumulates. The MIUI second-space WhatsApp is merged into WhatsApp. Launchers, settings and similar are in “System (excluded)” and left out of totals.</li>
+<li><b>Phone Brave</b>: the Brave History screen was scraped over adb (${pw.visits.toLocaleString()} visits${pw.scraped_at?', '+pw.scraped_at.replace('T',' '):''}). It lists every visit with day, title and domain, but no time of day and no URL path. Time per visit is <i>estimated</i>: each day's exact Brave foreground time is split across that day's visits, weighted by how long the same site takes per visit on desktop, and visits are laid in order over that day's Brave sessions to get an hour. Days older than the usage-stats window use the average ratio (${pw.k_cal} × desktop time per visit) and have no hour. Phone YouTube can't be split into Shorts vs Watch.</li>
+<li><b>Per-day averages</b>: each source is divided by its own covered days inside the selected range, then summed across devices. First and last days of each source are dropped as partial. Timezone America/Sao_Paulo.</li></ul>`;
+}
+
+/* ---------- carried over from v1: breakdowns, binge days, recommendations ---------- */
+const WASTE_MAX=40;
+const isWaste=(c,dev)=>!excluded(c)&&scoreOf(c,dev)<=WASTE_MAX;
+const tot=o=>o?o.desktop+o.phone:0, vis=o=>o?o.vd+o.vp:0;
+const keyIdx=new Map(ITEMS.map((it,i)=>[it.k,i]));
+const Z={desktop:0,phone:0,vd:0,vp:0};
+const addO=(a,b)=>({desktop:a.desktop+b.desktop,phone:a.phone+b.phone,vd:a.vd+b.vd,vp:a.vp+b.vp});
+const perVisit=o=>vis(o)?fmt(tot(o)/vis(o)):'–';
+const dayLbl=iso=>new Date(iso+'T12:00').toLocaleDateString('en-US',{month:'short',day:'numeric'});
+const devOn=d=>st.dev==='all'||st.dev===d;
+function inCat(m,cat){ // items (with presence on a device) whose raw category there is cat, summed per device
+  let o={...Z};const list=[];
+  for(const [i,x] of m){const part={...Z};
+    for(const d of DEVS){if(catOf(i,d)!==cat)continue;if(d==='desktop'){part.desktop=x.desktop;part.vd=x.vd;}else{part.phone=x.phone;part.vp=x.vp;}}
+    if(tot(part)||vis(part)){o=addO(o,part);list.push([i,part]);}}
+  return {o,list:list.sort((a,b)=>tot(b[1])-tot(a[1]))};
+}
+function barRows(list,n){
+  const l=list.slice(0,n),max=Math.max(1,...l.map(x=>tot(x[1])));
+  return l.map(([i,o])=>`<div class="row"><div class="ell"><b>${esc(ITEMS[i].l)}</b><br><span class="mut">avg ${perVisit(o)}/visit</span></div>${stack(o,max)}<div class="right"><b>${fmt(tot(o))}/day</b><br><span class="mut">${fmtV(vis(o))} visits/day</span></div></div>`).join('');
+}
+function termList(keys){
+  const agg=new Map();
+  for(const k of keys){const i=keyIdx.get(k);if(i==null)continue;const T=D.terms[i]||{};
+    for(const d of DEVS){if(!devOn(d))continue;for(const [t,s,v] of T[d]||[]){const a=agg.get(t)||{s:0,v:0,dev:new Set()};a.s+=s;a.v+=v;a.dev.add(d);agg.set(t,a);}}}
+  const l=[...agg].sort((a,b)=>b[1].s-a[1].s).slice(0,12);if(!l.length)return '<p class="mut">–</p>';
+  return `<table>${l.map(([t,a])=>`<tr><td class="ell" style="max-width:320px">${esc(t)}${[...a.dev].map(d=>`<span class="chip dev-${d[0]}">${d==='desktop'?'🖥':'📱'}</span>`).join('')}</td><td class="right mut">${fmt(a.s)}</td><td class="right mut">${a.v}×</td></tr>`).join('')}</table>`;
+}
+function renderBreakdowns(rows){
+  const m=perDay(rows,r=>r[1]);const g=k=>m.get(keyIdx.get(k))||Z;
+  const w=g('youtube.com › Watch'),s=g('youtube.com › Shorts'),p=g('youtube.com › Mixed (phone)');
+  document.getElementById('kpiYt').innerHTML=[[`${fmt(tot(w))} vs ${fmt(tot(s))}`,'per day desktop YouTube <b>Watch</b> vs <b>Shorts</b>'],
+    [`${fmtV(vis(s))} / ${fmtV(vis(w))}`,'Shorts vs Watch visits per day (count ≠ time)'],[fmt(tot(p)),'per day phone YouTube (Shorts/Watch mixed)']]
+    .map(([a,b])=>`<div class="card"><div class="kpi">${a}<small>${b}</small></div></div>`).join('');
+  const yt=[...m].filter(([i])=>ITEMS[i].k.startsWith('youtube.com')).sort((a,b)=>tot(b[1])-tot(a[1]));
+  const go=[...m].filter(([i])=>ITEMS[i].k.startsWith('google.com')).sort((a,b)=>tot(b[1])-tot(a[1]));
+  const blk=(title,list)=>`<div><h3>${title}</h3>${list.length?barRows(list,10):'<p class="mut">–</p>'}</div>`;
+  const dev=inCat(m,'Dev & Work'),com=inCat(m,'Communication');
+  document.getElementById('breaks').innerHTML=blk(`🔴 YouTube by type · ${fmt(yt.reduce((a,x)=>a+tot(x[1]),0))}/day`,yt)+blk(`🔵 Google by type · ${fmt(go.reduce((a,x)=>a+tot(x[1]),0))}/day`,go)+
+    blk(`🟢 Dev & Work · ${fmt(tot(dev.o))}/day`,dev.list)+blk(`🟡 Communication · ${fmt(tot(com.o))}/day`,com.list);
+  document.getElementById('ytTerms').innerHTML=termList(['youtube.com › Search']);
+  document.getElementById('gTerms').innerHTML=termList(['google.com › Search']);
+}
+function dayStats(rows){ // actual (not averaged) per-day totals
+  const days=new Map();
+  for(const r of rows){const dev=SRC[r[0]].dev,c=catOf(r[1],dev);if(excluded(c))continue;
+    let o=days.get(r[2]);if(!o){o={secs:0,waste:0,visits:0,items:new Map(),login:0};days.set(r[2],o);}
+    o.secs+=r[4];o.visits+=r[5];if(isWaste(c,dev))o.waste+=r[4];if(c==='Accounts & Login')o.login+=r[5];
+    o.items.set(r[1],(o.items.get(r[1])||0)+r[4]);}
+  return [...days].map(([d,o])=>({day:DAYS[d],...o,top:[...o.items].sort((a,b)=>b[1]-a[1]).slice(0,3)}));
+}
+function hourProfile(rows){ // average seconds per hour-of-day (known hours only)
+  const m=perDay(rows.filter(r=>r[3]>=0),r=>r[3]);return Array.from({length:24},(_,h)=>tot(m.get(h)));
+}
+function renderBinge(rows){
+  const ds=dayStats(rows),top=[...ds].sort((a,b)=>b.secs-a.secs).slice(0,8);
+  document.getElementById('binge').innerHTML='<tr><th>Day</th><th>Time · visits · waste</th><th>Top items that day</th></tr>'+top.map(b=>
+    `<tr><td><b>${b.day}</b></td><td>${fmt(b.secs)} · ${b.visits.toLocaleString()} visits · <b>${Math.round(b.waste/Math.max(1,b.secs)*100)}%</b> waste</td><td class="mut">${b.top.map(([i,s])=>`${esc(ITEMS[i].l)} ${fmt(s)}`).join(' · ')}</td></tr>`).join('');
+  const k=kpiNums(rows), worst=[...ds].sort((a,b)=>b.waste-a.waste).slice(0,2);
+  const work=[...ds].sort((a,b)=>b.secs-a.secs).slice(0,12).sort((a,b)=>a.waste/a.secs-b.waste/b.secs)[0];
+  const hp=hourProfile(rows);let qs=5,qv=Infinity;for(let h=5;h<=10;h++){const v=hp[h]+hp[h+1]+hp[h+2];if(v<qv){qv=v;qs=h;}}
+  const P=[];
+  P.push(['bad',`<b>${k.lateShare}% of your time is between 23h and 04h</b> (${fmt(k.late)}/day).`+(worst[0]?` Worst waste days: ${worst.map(b=>`<b>${dayLbl(b.day)}</b> ${fmt(b.waste)} of waste out of ${fmt(b.secs)} (${Math.round(b.waste/b.secs*100)}%, mostly ${esc(ITEMS[b.top[0][0]].l)})`).join('; ')}.`:'')]);
+  if(work)P.push(['warn',`<b>Heavy days aren't all fun:</b> ${dayLbl(work.day)} had ${fmt(work.secs)} with only ${Math.round(work.waste/work.secs*100)}% waste (top: ${work.top.map(([i])=>esc(ITEMS[i].l)).join(', ')}). The extension should tell work binges and auth churn apart from fun.`]);
+  P.push(['good',`<b>Quiet window ${qs}–${qs+3}h</b> (${fmt(qv)}/day across those 3 hours) is your natural focus block. Protect it and schedule deep work there.`]);
+  if(st.dev!=='desktop'){const m=perDay(rows,r=>r[1]),ph=[...m].filter(([i,o])=>o.phone).sort((a,b)=>b[1].phone-a[1].phone)[0];
+    if(ph)P.push(['warn',`<b>Phone:</b> ${fmt(k.all.phone)}/day, led by ${esc(ITEMS[ph[0]].l)} at ${fmt(ph[1].phone)}/day. Weighted score 📱 ${k.byDev.phone} vs 🖥 ${k.byDev.desktop}.`]);}
+  document.getElementById('pattern').innerHTML=P.map(([c,h])=>`<div class="rec ${c}">${h}</div>`).join('');
+}
+function kpiNums(rows){
+  const all=perDay(rows,()=>0).get(0)||Z;
+  const lateRows=rows.filter(r=>r[3]>=23||(r[3]>=0&&r[3]<4));
+  const late=tot(perDay(lateRows,()=>0).get(0)), known=tot(perDay(rows.filter(r=>r[3]>=0),()=>0).get(0));
+  const lateWaste=tot(perDay(lateRows.filter(r=>{const d=SRC[r[0]].dev;return isWaste(catOf(r[1],d),d);}),()=>0).get(0));
+  const w=weighted(rows),bd={};DEVS.forEach(d=>bd[d]=w.byDev[d][1]?Math.round(w.byDev[d][0]/w.byDev[d][1]):'–');
+  return {all,late,lateWaste,lateShare:Math.round(late/Math.max(1,known)*100),byDev:bd};
+}
+function renderRecs(rows){
+  const m=perDay(rows,r=>r[1]),g=k=>m.get(keyIdx.get(k))||Z,C=c=>inCat(m,c),k=kpiNums(rows);
+  const w=g('youtube.com › Watch'),s=g('youtube.com › Shorts'),p=g('youtube.com › Mixed (phone)');
+  const news=addO(C('Search & News').o,C('News sites').o), com=C('Communication'), soc=C('Social'), hn=g('news.ycombinator.com'), shop=C('Shopping');
+  const core=addO(C('Dev & Work').o,C('AI Tools').o), ds=dayStats(rows);
+  const worst=[...ds].sort((a,b)=>b.waste-a.waste).slice(0,2), churn=[...ds].sort((a,b)=>b.login-a.login)[0];
+  const top3=l=>l.slice(0,3).map(([i,o])=>`${esc(ITEMS[i].l)} ${fmt(tot(o))}`).join(' + ');
+  const gTop=(()=>{const i=keyIdx.get('google.com › Search');const T=i==null?{}:D.terms[i]||{};const l=DEVS.filter(devOn).flatMap(d=>T[d]||[]).sort((a,b)=>b[1]-a[1]);return l[0];})();
+  const wa=g('web.whatsapp.com'), hp=hourProfile(rows);let qs=5,qv=Infinity;for(let h=5;h<=10;h++){const v=hp[h]+hp[h+1]+hp[h+2];if(v<qv){qv=v;qs=h;}}
+  const R=[
+    ['R1',`YouTube <b>Watch ${fmt(tot(w))}/day</b> (${perVisit(w)}/visit) vs <b>Shorts ${fmt(tot(s))}/day</b> (${fmtV(vis(s))} swipes/day)${tot(p)?` + 📱 phone YouTube <b>${fmt(tot(p))}/day</b>`:''}`,'Pause Watch after 25 min continuous; Shorts after 30 swipes/day (phone: Digital Wellbeing timer on Brave/YouTube)',0.3*(tot(w)+tot(s)+tot(p)),'30% of YouTube'],
+    ['R2',`Late night <b>${k.lateShare}% of time</b> (23h–04h, ${fmt(k.late)}/day; ${fmt(k.lateWaste)}/day of it low-score)`,"After 23h: 10s delay on YouTube/WhatsApp + show today's waste total",0.3*k.lateWaste,'30% of late-night waste'],
+    ['R3',`News <b>${fmt(tot(news))}/day</b> (search & news sites)${gTop?`; top query <i>${esc(gTop[0])}</i> ${gTop[2]}× over the history`:''} ${devSplit(news)}`,'20 min/day news cap, then block search refinements for 1h. Toggle: news = entertainment',0.3*tot(news),'30%'],
+    ['R4',`Comms <b>${fmt(tot(com.o))}/day</b> (${top3(com.list)})${vis(wa)?`; WhatsApp web ${perVisit(wa)}/visit`:''} ${devSplit(com.o)}`,'3 check-windows/day; mute WhatsApp (web + app) after 22h',0.25*tot(com.o),'25%'],
+    ['R5',`Social feeds <b>${fmt(tot(soc.o)+tot(hn))}/day</b> (${top3(soc.list)}${tot(hn)?` + HN ${fmt(tot(hn))}`:''})`,'15 min/day feed cap; hide LinkedIn feed, keep jobs/messages',0.4*(tot(soc.o)+tot(hn)),'40%'],
+    ['R6',`Shopping <b>${fmt(tot(shop.o))}/day</b> (${top3(shop.list)}) ${devSplit(shop.o)}`,'Intent timer: 10 min/session, then nudge a “buy later” list',0.3*tot(shop.o),'30%'],
+    ['R7',`Binge days: ${worst.map(b=>`<b>${dayLbl(b.day)} ${fmt(b.secs)}</b> (${Math.round(b.waste/Math.max(1,b.secs)*100)}% waste)`).join(', ')||'–'}`,'Daily quota: warn at 2h entertainment/day, hard pause at 3h',null,'Caps worst days'],
+    ['R8',churn&&churn.login?`Auth churn: ${dayLbl(churn.day)} had <b>${churn.login} login/account visits</b> in one day`:'Auth churn: none in range','Never nudge login/auth/maps domains; separate “churn” from fun in reports',null,'Less annoyance'],
+    ['R9',`Useful core <b>${fmt(tot(core))}/day</b> (Dev & Work + AI Tools) ${devSplit(core)} + quiet window ${qs}–${qs+3}h`,'Never block localhost / dev tools / chatgpt / claude; pin deep work to the quiet window',null,'Protects output'],
+  ];
+  document.getElementById('recs').innerHTML='<tr><th>#</th><th>Problem (your per-day cost)</th><th>Extension rule</th><th>Saves / day</th></tr>'+
+    R.map(([id,prob,rule,save,how])=>`<tr><td><b>${id}</b></td><td>${prob}</td><td>${rule}</td><td>${save!=null?`<b>~${fmt(save)}</b><br><span class="mut">${how}</span>`:how}</td></tr>`).join('');
+  const sum=R.slice(0,6).reduce((a,r)=>a+(r[3]||0),0),r12=R[0][3]+R[1][3];
+  document.getElementById('recSum').innerHTML=`<div class="rec good"><b>Combined (R1–R6): ~${fmt(sum)}/day saved</b> without touching work time. That's about ${Math.round(sum*30/3600)}h/month of reclaimed attention. Start with R1 + R2 (~${fmt(r12)}/day): highest leverage, lowest friction. R1 and R2 overlap a little (late-night YouTube counts in both).</div>`;
+}
+
+/* ---------- controls ---------- */
+function setRange(v){
+  const last=SRC.filter(Boolean).map(s=>s.to).sort().pop(), first=SRC.filter(Boolean).map(s=>s.from).sort()[0];
+  const back=n=>{const t=new Date(last+'T12:00');t.setDate(t.getDate()-n+1);return t.toISOString().slice(0,10);};
+  if(v==='all'){st.from=first;st.to=last;}else if(v==='phoneapps'&&SRC[1]){st.from=SRC[1].from;st.to=SRC[1].to;}else{st.from=back(+v);st.to=last;}
+  document.getElementById('from').value=st.from;document.getElementById('to').value=st.to;
+}
+function seg(id,fn){const el=document.getElementById(id);el.querySelectorAll('button').forEach(b=>b.onclick=()=>{el.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));fn(b.dataset.v);render();});}
+seg('devSeg',v=>st.dev=v);seg('rangeSeg',setRange);seg('metricSeg',v=>st.metric=v);
+['from','to'].forEach(id=>document.getElementById(id).onchange=e=>{st[id]=e.target.value;document.querySelectorAll('#rangeSeg button').forEach(x=>x.classList.remove('on'));render();});
+document.getElementById('newsEnt').onchange=e=>{st.newsEnt=e.target.checked;render();};
+document.getElementById('q').oninput=()=>renderCatTable(filtered());
+document.getElementById('catFilter').innerHTML='<option value="">any category</option>'+cfg.categories.map(c=>`<option>${esc(c.name)}</option>`).join('');
+document.getElementById('catFilter').onchange=()=>renderCatTable(filtered());
+document.getElementById('export').onclick=()=>{const b=new Blob([JSON.stringify(cfg,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='categories.json';a.click();};
+document.getElementById('reset').onclick=()=>{if(!confirm('Drop all category/score edits made in this browser?'))return;try{localStorage.removeItem(LS);}catch(e){}cfg=clone(D.config);compileRules();render();};
+compileRules();setRange('all');renderMethod();render();
+</script>
+</body>
+</html>

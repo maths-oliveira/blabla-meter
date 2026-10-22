@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>usefulnews</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📰</text></svg>">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header class="top">
+  <h1>📰 usefulnews</h1>
+  <span id="job" class="muted small"></span>
+  <button id="btn-refresh" class="primary" type="button">↻ Refresh</button>
+  <button id="btn-memory" type="button">🧠 Memory</button>
+  <button id="btn-settings" type="button">⚙ Settings</button>
+</header>
+
+<main>
+  <div id="onboard" class="card" hidden>
+    <h2>Tell me about you first</h2>
+    <p class="muted">Usefulness is personal: a free cooking workshop in your neighborhood beats a celebrity's accident. These answers are what every article is judged against.</p>
+    <div class="profile-form" data-profile-form></div>
+    <div class="actions"><button id="onboard-save" class="primary" type="button">Save and fetch news</button></div>
+  </div>
+
+  <div class="toolbar card">
+    <label class="slider">Min usefulness <b id="min-val">50</b>
+      <input id="min" type="range" min="0" max="100" step="5" value="50">
+    </label>
+    <input id="search" type="search" placeholder="Search titles…">
+    <select id="sort"><option value="useful">Most useful</option><option value="date">Newest</option></select>
+    <span id="counts" class="muted small"></span>
+  </div>
+  <div id="topics" class="chips"></div>
+
+  <div id="list"></div>
+  <details id="hidden-wrap" class="card" hidden>
+    <summary id="hidden-sum"></summary>
+    <div id="hidden-list"></div>
+  </details>
+</main>
+
+<dialog id="dlg-settings">
+  <form method="dialog" id="settings-form">
+    <h3>Settings</h3>
+    <h4>Your profile</h4>
+    <div class="profile-form" data-profile-form></div>
+    <h4>Scorer</h4>
+    <label>Who judges the articles
+      <select id="s-scorer">
+        <option value="jev">Jev (TypeSafe) — fast, cheap, calibrated probabilities</option>
+        <option value="llm">Generative LLM (OpenCode / OpenRouter / …)</option>
+      </select>
+    </label>
+    <label id="s-ts-wrap">TypeSafe API key <input id="s-ts" type="password" placeholder="leave empty to keep"></label>
+    <p id="s-ts-src" class="muted small"></p>
+    <div id="s-llm-wrap">
+      <label>LLM provider <select id="s-provider"></select></label>
+      <label>Model <input id="s-model" placeholder="default"></label>
+      <label id="s-url-wrap">Endpoint URL <input id="s-url" placeholder="https://…/v1"></label>
+      <label id="s-key-wrap">API key <input id="s-key" type="password" placeholder="leave empty to keep"></label>
+      <p class="muted small">The LLM is also used to turn your feedback notes into learned preferences.</p>
+    </div>
+    <h4>Weights</h4>
+    <p class="muted small">Usefulness = weighted mix of the four scores, then each flag multiplies it by (1 − weight × probability). Changing weights is instant — no re-scoring.</p>
+    <div id="s-weights" class="weights"></div>
+    <h4>Sources</h4>
+    <label>Feeds — one per line: <code>name | url</code>
+      <textarea id="s-feeds" rows="7"></textarea>
+    </label>
+    <label class="inline"><input type="checkbox" id="s-local"> Add a Google News feed for my location</label>
+    <label>Keep articles from the last <input id="s-days" type="number" min="1" max="14" style="width:70px"> days</label>
+    <div class="actions">
+      <button value="cancel" formnovalidate>Cancel</button>
+      <button value="save" class="primary">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="dlg-memory">
+  <form method="dialog" id="memory-form">
+    <h3>🧠 What I learned about you</h3>
+    <p class="muted small">Your thumbs, scores and notes become (1) preference rules that every judgment sees, and (2) per-topic / per-source adjustments. Edit the rules freely — one per line.</p>
+    <textarea id="m-rules" rows="8"></textarea>
+    <div id="m-page-wrap" hidden><p class="muted small">Also used, learned from your feedback on web pages in the bbla extension (edit them there):</p><ul id="m-page-rules" class="muted small"></ul></div>
+    <p id="m-info" class="muted small"></p>
+    <div id="m-bias" class="bias"></div>
+    <div class="actions">
+      <button id="m-learn" type="button">Re-learn from feedback now</button>
+      <button value="cancel" formnovalidate>Close</button>
+      <button value="save" class="primary">Save rules</button>
+    </div>
+  </form>
+</dialog>
+
+<template id="tpl-article">
+  <article class="item">
+    <div class="badge"></div>
+    <div class="body">
+      <a class="title" target="_blank" rel="noopener"></a>
+      <div class="meta"></div>
+      <p class="summary"></p>
+      <details class="why"><summary>why this score</summary><div class="why-body"></div></details>
+      <div class="fb">
+        <button type="button" class="up" title="useful">👍</button>
+        <button type="button" class="down" title="useless">👎</button>
+        <input class="myscore" type="number" min="0" max="100" placeholder="my score">
+        <input class="note" type="text" placeholder="why? (optional — teaches the app)">
+        <button type="button" class="save">Save</button>
+        <span class="saved muted small"></span>
+      </div>
+    </div>
+  </article>
+</template>
+
+<script src="app.js"></script>
+</body>
+</html>

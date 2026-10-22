@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Start the bbla bridge (:8804 — AI, usage report, shared rules) and the news ranker (:8805).
+# Usage: ./run            both, news in the foreground (Ctrl+C stops both)
+#        ./run bridge     only the bridge
+#        ./run news       only the news app
+set -u
+cd "$(dirname "$(readlink -f "$0")")" || exit 1
+free() { fuser -k "$1/tcp" >/dev/null 2>&1 || true; }
+case "${1:-all}" in
+  bridge) free 8804; exec python3 bridge/bridge.py ;;
+  news)   free 8805; exec python3 news/app.py ;;
+  all)
+    free 8804; free 8805
+    python3 bridge/bridge.py & BR=$!
+    trap 'kill $BR 2>/dev/null' EXIT INT TERM
+    echo "bridge :8804 (pid $BR) · news http://127.0.0.1:8805"
+    python3 news/app.py ;;
+  *) echo "usage: ./run [all|bridge|news]" >&2; exit 64 ;;
+esac

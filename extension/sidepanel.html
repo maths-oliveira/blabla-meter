@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>bbla</title>
+<link rel="stylesheet" href="ui.css">
+</head>
+<body>
+<header class="top">
+  <strong>bbla</strong>
+  <button id="btn-power" type="button" title="Turn the whole extension on/off (no scoring, badges or ad-blocking while off)">⏻ on</button>
+  <span id="page-title" class="muted small ellipsis"></span>
+  <a href="http://127.0.0.1:8805/" target="_blank" class="icon-btn" title="Useful news: ranked with the same preferences (news/, start with bbla/run)">📰</a>
+  <a href="options.html" target="_blank" class="icon-btn" title="Options & memory">⚙</a>
+  <a href="https://buymeacoffee.com/maths-oliveira" target="_blank" rel="noopener" class="icon-btn" title="Like bbla? Buy me a coffee">☕</a>
+</header>
+
+<main>
+  <section id="usage" class="usage" hidden></section>
+  <div class="row">
+    <button id="btn-analyze" class="primary grow" type="button">Score this page</button>
+    <button id="btn-clear" type="button" title="Remove highlight marks and section score badges from the page (scores and memory are kept)">✕ marks</button>
+  </div>
+  <div class="row" style="margin-top:6px">
+    <button id="btn-ads" type="button" title="Hide ads on every page while ON (Jev via the bridge + instant heuristics)">🚫 ads: off</button>
+    <button id="btn-pick" type="button" title="Click a page element to block it on this site (Unclutter-style)">⛔ block</button>
+    <button id="btn-score" type="button" title="Click a section to score just it — bbla learns the area for this site">◉ score</button>
+    <button id="btn-log" type="button" title="Download diagnostic log: what the page gave + what the extension answered (no keys inside)">🧾 log</button>
+    <span id="ads-status" class="muted small"></span>
+  </div>
+  <p id="status" class="status" hidden></p>
+
+  <section id="result" hidden>
+    <div class="scorebox">
+      <div id="gauge" class="gauge"><span id="score">–</span><small>/100 useful</small></div>
+      <div id="score-tags" class="legend"></div>
+    </div>
+    <p id="meta" class="muted small"></p>
+    <div class="row" style="margin-top:6px">
+      <button id="btn-deep" class="primary grow" type="button" hidden>AI summary & highlights</button>
+      <span id="deep-status" class="muted small"></span>
+    </div>
+
+    <details id="outline-box">
+      <summary id="outline-sum" class="muted small"></summary>
+      <ol id="outline" class="small"></ol>
+    </details>
+
+    <section id="deep" hidden>
+    <h3>AI deep dive</h3>
+    <p id="verdict"></p>
+    <h3>Pareto summary</h3>
+    <ul id="pareto" class="pareto"></ul>
+
+    <h3>Bullshit highlighter <span id="hl-count" class="muted small"></span></h3>
+    <div id="legend" class="legend"></div>
+    <ol id="highlights" class="hls"></ol>
+
+    <h3>Your feedback</h3>
+    <div class="fb">
+      <div class="row">
+        <button id="fb-up" type="button" title="good analysis">👍</button>
+        <button id="fb-down" type="button" title="bad analysis">👎</button>
+        <input id="fb-score" type="number" min="0" max="100" placeholder="my score">
+      </div>
+      <textarea id="fb-note" rows="2" placeholder="Why? e.g. 'score too high, this is a press release' — bbla learns from it"></textarea>
+      <div class="row end"><span id="fb-saved" class="muted small"></span><button id="fb-send" type="button" class="primary">Send feedback</button></div>
+    </div>
+    </section>
+  </section>
+</main>
+<script type="module" src="sidepanel.js"></script>
+</body>
+</html>

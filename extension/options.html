@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>bbla options</title>
+<link rel="stylesheet" href="ui.css">
+</head>
+<body>
+<header class="top"><strong>bbla</strong><span id="ext-version" class="muted small"></span><span class="muted small">options & memory</span></header>
+<main>
+  <section class="card">
+    <h3>Extension</h3>
+    <div class="row">
+      <button id="btn-enabled" type="button">⏻ on</button>
+      <span class="muted small">Master switch: while off bbla touches no page (no scoring, badges, pickers or ad-blocking).</span>
+    </div>
+  </section>
+  <section class="card">
+    <h3>AI provider</h3>
+    <label>Provider <select id="provider"></select></label>
+    <label>Model <input id="model" placeholder="default"></label>
+    <label id="key-wrap">API key <input id="key" type="password" autocomplete="off"></label>
+    <p id="key-help" class="muted small"></p>
+    <label id="url-wrap">Endpoint base URL <input id="baseUrl" placeholder="https://api.example.com/v1"></label>
+    <label id="bridge-wrap">Bridge URL <input id="bridgeUrl" placeholder="http://127.0.0.1:8804"></label>
+    <div class="row">
+      <button id="save" class="primary" type="button">Save</button>
+      <button id="test" type="button">Test</button>
+      <span id="saved" class="muted small"></span>
+    </div>
+  </section>
+
+  <section class="card">
+    <h3>Jev ad-block — key & score thresholds</h3>
+    <p class="muted small">The 🚫 toggle hides obvious ads instantly, then asks Jev (TypeSafe) about the
+    ambiguous ones. The key below is sent with each scoring request; “Save key to bridge” also stores
+    it in <code>~/.config/bbla/typesafe.key</code> so <code>./run</code> and the news ranker use it too.</p>
+    <label>TypeSafe API key <input id="typesafeKey" type="password" autocomplete="off" placeholder="tsk-…"></label>
+    <label>Jev model <input id="jevModel" placeholder="jev-1.13.0"></label>
+    <label>Hide when is_ad ≥ <span id="hideAt-val" class="muted"></span>
+      <input id="hideAt" type="range" min="0" max="1" step="0.05"></label>
+    <label>Hide when is_ad ≥ <span id="hideAtDisrupt-val" class="muted"></span> + disrupts ≥ <span id="disruptAt-val" class="muted"></span>
+      <input id="hideAtDisrupt" type="range" min="0" max="1" step="0.05">
+      <input id="disruptAt" type="range" min="0" max="1" step="0.05" style="margin-top:4px"></label>
+    <div class="row">
+      <button id="save-ads" class="primary" type="button">Save ad-block</button>
+      <button id="test-jev" type="button">Test Jev</button>
+      <button id="save-jev-key" type="button" title="Store the key in ~/.config/bbla/typesafe.key on this computer">Save key to bridge</button>
+      <button id="reset-thr" type="button" title="Back to 0.55 / 0.35 + 0.60">Defaults</button>
+      <span id="ads-saved" class="muted small"></span>
+    </div>
+  </section>
+
+  <section class="card">
+    <h3>Page access</h3>
+    <p class="muted small">By default bbla can read a page only after you click its toolbar icon on it. Allow all sites to analyze any tab straight from the side panel.</p>
+    <button id="perm" type="button">Allow all sites</button> <span id="perm-state" class="muted small"></span>
+  </section>
+
+  <section class="card">
+    <h3>Learned preferences</h3>
+    <p class="muted small">Distilled from your thumbs, scores and notes every 5 feedback items. Sent with every analysis. Edit freely, one per line.</p>
+    <textarea id="rules" rows="6"></textarea>
+    <div class="row">
+      <button id="save-rules" type="button" class="primary">Save rules</button>
+      <button id="relearn" type="button">Re-learn from feedback now</button>
+      <span id="mem-info" class="muted small"></span>
+    </div>
+  </section>
+
+  <section class="card">
+    <h3>Bullshit categories</h3>
+    <p class="muted small">The highlighter uses these. The AI proposes new ones when a passage fits none (marked “learned”).</p>
+    <table>
+      <thead><tr><th></th><th>Name</th><th>Meaning</th><th></th></tr></thead>
+      <tbody id="cats"></tbody>
+    </table>
+    <div class="row" style="margin-top:8px">
+      <button id="add-cat" type="button">+ Add category</button>
+      <button id="save-cats" type="button" class="primary">Save categories</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <h3>Blocked elements per site</h3>
+    <p class="muted small">Elements you blocked with the side panel’s “⛔ block” picker (Unclutter-style).
+    They hide on every visit to that site, even with the 🚫 toggle off.</p>
+    <ol id="blocks" class="small"></ol>
+    <h3>Learned score areas per site</h3>
+    <p class="muted small">Sections you scored with the side panel's “◉ score” picker. They are
+    included as blocks in every future scoring on that site.</p>
+    <ol id="scoreareas" class="small"></ol>
+  </section>
+
+  <section class="card">
+    <h3>Memory file</h3>
+    <p class="muted small">Everything bbla learned (rules, categories, feedback, plus the ◉-score areas per site) as one JSON file.</p>
+    <div class="row">
+      <button id="export" type="button">Export</button>
+      <label class="row" style="margin:0"><input id="import" type="file" accept="application/json"></label>
+      <button id="reset" type="button">Reset memory</button>
+    </div>
+    <h3>Recent feedback</h3>
+    <ol id="feedback" class="small"></ol>
+  </section>
+
+  <section class="card">
+    <h3>Developer</h3>
+    <div class="row">
+      <button id="reload-ext" type="button" title="Reload the extension code from disk — same as the ↻ button on brave://extensions">↻ Reload extension</button>
+      <span class="muted small">Use after editing extension files. The side panel closes; reopen it via the toolbar icon.</span>
+    </div>
+  </section>
+
+  <section class="card">
+    <h3>Support bbla</h3>
+    <div class="row">
+      <a class="btn primary" href="https://buymeacoffee.com/maths-oliveira" target="_blank" rel="noopener">☕ Buy me a coffee</a>
+      <span class="muted small">bbla is free and runs locally. If it saves you time, a coffee keeps it going.</span>
+    </div>
+  </section>
+</main>
+<script type="module" src="options.js"></script>
+</body>
+</html>

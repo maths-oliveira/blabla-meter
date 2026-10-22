@@ -1,0 +1,6 @@
+this app will be a chrome extension that will help to stop using internet for useless things
+
+you can take inspiration in time tracker extension as well (it's installed on my brave)
+
+
+the ideia is to keep track of what websites i am spednign my time, define score of usability / useful for life, generate report and recomendation as well. 
