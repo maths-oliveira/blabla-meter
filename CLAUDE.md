@@ -34,6 +34,8 @@ Read `README.md`. Origin: `outline.txt` (keep it).
     with a whitespace/quote-tolerant regex, wraps ranges back-to-front. `extractPage` also returns
     `headings` + `words` (side panel reading time + outline) and `blocks` (per-heading sections
     for badges); `showBlockScores`/`clearBlockScores` draw the per-section score circles.
+    Badges go inside real h1–h6 (before clamped card headlines); the number is CSS `::before`
+    from `data-score`, so it never leaks into `innerText` on re-extraction.
     Container choice is by text volume (feeds over lone articles); header/footer/aside only
     count as chrome when top-level or nav-bearing, so hero sections keep badges.
     `startElementPicker`,

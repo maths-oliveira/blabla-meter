@@ -37,12 +37,14 @@ The open-source local helper (GitHub, link below) adds an instant score with exp
 Open source: https://github.com/maths-oliveira/blabla-meter
 ```
 
-**Screenshots** (1280×800 or 640×400, at least 1, up to 5). Suggested shots:
-1. A news article with highlights on the page and the side panel showing the score, chips and Pareto summary.
-2. The side panel's highlight list with ✓/✗ feedback and the legend.
-3. ⚙ Options → AI provider with the provider dropdown open.
-4. Per-section score badges on a long page.
-5. The ⛔ block picker hovering an element.
+**Screenshots** (1280×800, ready in `store/screenshots/`, upload in this order):
+1. `1-score-and-highlights.png`: page with highlights and section badges, panel with score, chips, verdict and Pareto summary.
+2. `2-highlight-list.png`: highlight list with ✓/✗ feedback and the feedback box.
+3. `3-choose-your-ai.png`: ⚙ Options → AI provider (Anthropic selected).
+4. `4-section-badges-outline.png`: per-section badges next to the AI summary.
+5. `5-block-picker.png`: the ⛔ block picker on a sponsored box.
+
+They show real output (the local bridge's free model + Jev) on a fictional article, `store/screenshots/demo-article.html`.
 
 **Small promo tile** (440×280, optional): the icon, "Blabla Meter" and the line "Is this page worth your time?"
 

@@ -328,7 +328,7 @@ export function showBlockScores(items, opts) {
   if (!document.getElementById("bbla-badge-style")) {
     const st = document.createElement("style");
     st.id = "bbla-badge-style";
-    st.textContent = ".bbla-badge{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;border-radius:999px;color:#fff;font:700 12px/1 system-ui,sans-serif;padding:0 5px;margin-right:6px;vertical-align:2px;cursor:help}";
+    st.textContent = ".bbla-badge{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;border-radius:999px;color:#fff;font:700 12px/1 system-ui,sans-serif;padding:0 5px;margin-right:6px;vertical-align:2px;cursor:help}.bbla-badge::before{content:attr(data-score)}h1>.bbla-badge,h2>.bbla-badge,h3>.bbla-badge,h4>.bbla-badge,h5>.bbla-badge,h6>.bbla-badge{vertical-align:middle;margin-right:8px}";
     document.head.appendChild(st);
   }
   let shown = 0, missing = 0;
@@ -341,15 +341,21 @@ export function showBlockScores(items, opts) {
     const s = Math.max(0, Math.min(100, Math.round(+it.score)));
     const b = document.createElement("span");
     b.className = "bbla-badge";
-    b.textContent = Number.isFinite(s) ? String(s) : "?";
+    // The number is CSS-generated (::before), so it never leaks into innerText
+    // when headings and section excerpts are re-read for the next scoring.
+    b.dataset.score = Number.isFinite(s) ? String(s) : "?";
     b.style.background = !Number.isFinite(s) ? "#64748b" : s >= 60 ? "#16a34a" : s >= 35 ? "#d97706" : "#dc2626";
-    const lines = [`Blabla Meter · section score ${b.textContent}/100`];
+    const lines = [`Blabla Meter · section score ${b.dataset.score}/100`];
     for (const t of it.tags || []) lines.push(`· ${t}`);
     for (const a of it.ai || []) lines.push(`AI: ${a}`);
     b.title = lines.join("\n");
-    // Before the heading, not inside it: card headlines often use line-clamp
-    // truncation, which would clip an inner badge.
-    if (h.parentElement) h.parentElement.insertBefore(b, h);
+    // Inside real headings, so the badge sits on the heading line instead of
+    // reading as the end of the previous section. Card headlines with
+    // line-clamp/ellipsis would clip an inner badge: those get it just before.
+    const cs = getComputedStyle(h);
+    const clamped = (cs.webkitLineClamp && cs.webkitLineClamp !== "none") || cs.textOverflow === "ellipsis" || cs.overflow === "hidden";
+    if (/^H[1-6]$/.test(h.tagName) && !clamped) h.insertBefore(b, h.firstChild);
+    else if (h.parentElement) h.parentElement.insertBefore(b, h);
     else h.insertBefore(b, h.firstChild);
     shown++;
   }
