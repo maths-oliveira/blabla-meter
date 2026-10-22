@@ -180,7 +180,7 @@ async function pageScore(tabId) {
       signal: AbortSignal.timeout(90000),
     });
   } catch {
-    throw new Error("Bridge unreachable — start ./run (or the bridge) for the instant score.");
+    throw new Error("NO_BRIDGE"); // side panel points to the AI analysis instead
   }
   const data = await r.json().catch(() => ({}));
   if (r.status === 402) {

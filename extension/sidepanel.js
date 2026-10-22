@@ -140,6 +140,10 @@ async function scoreFast() {
       status("No Jev key — running the full AI analysis instead (set a TypeSafe key in ⚙ Options → Jev ad-block for the instant score).");
       await analyze(true);
       status("");
+    } else if (e.message === "NO_BRIDGE") {
+      // Store installs usually run without the local bridge: not an error.
+      status("The instant score needs the local helper (see the README). Use “AI summary & highlights” for the full analysis.");
+      $("btn-deep").hidden = false;
     } else {
       status(e.message + await autoLog("score-failed", e), true);
       $("btn-deep").hidden = false; // the deep dive may still work via a cloud provider
@@ -330,8 +334,8 @@ $("outline").onclick = async (e) => {
 };
 $("btn-log").onclick = async () => {
   try {
-    await downloadLog("", "");
-    status("Log downloaded — send bbla-log.json here so I can see what happened.");
+    await downloadLog(lastFailure?.reason || "", lastFailure?.error || "");
+    status("Log saved (bbla-log.json, no keys inside) — attach it to a GitHub issue when reporting a problem.");
   } catch (e) {
     status(e.message, true);
   }
@@ -356,13 +360,12 @@ async function downloadLog(reason, lastError) {
 }
 
 /* Best-effort auto-download on failure. Returns a status suffix for the panel. */
+/* Failures only record the reason; the file is saved when the user clicks 🧾
+   (auto-downloading put a file in Downloads on every failed panel open). */
+let lastFailure = null;
 async function autoLog(reason, err) {
-  try {
-    await downloadLog(reason, err?.message || String(err));
-    return " Diagnostics auto-downloaded — send the file here.";
-  } catch {
-    return " (log download blocked — use 🧾).";
-  }
+  lastFailure = { reason, error: err?.message || String(err) };
+  return " Click 🧾 log to save diagnostics.";
 }
 
 /* --- Marks toggle: hides highlight marks + badges, re-applies them from cache --- */

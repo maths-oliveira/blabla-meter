@@ -116,6 +116,11 @@ to bridge).
 Jev thresholds live in the same options card and travel with every `POST /ads/score` call, so the
 bridge needs no restart or config edit after you move a slider.
 
+## Privacy
+
+No analytics, no servers of ours: page text goes only to the AI provider you choose. Full policy:
+[PRIVACY.md](PRIVACY.md). Chrome Web Store listing text: [store/listing.md](store/listing.md).
+
 ## Tests
 
 ```bash
