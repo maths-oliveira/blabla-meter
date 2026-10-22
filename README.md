@@ -1,4 +1,6 @@
-# bbla — blabla meter (Chrome extension)
+# Blabla Meter (Chrome/Brave extension)
+
+*Repo and internal name: `bbla`.*
 
 [![Buy me a coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-%E2%98%95-FFDD00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/maths-oliveira)
 
@@ -23,7 +25,7 @@ Reads the page you're on and tells you how much of it is worth your attention:
 - **Bullshit highlighter** — marks sensationalism, clickbait, tragedy-as-entertainment, celebrity and
   political gossip, hate bait, empty speculation, filler, disguised ads, "not actionable for me" —
   right on the page, colour-coded. Click one in the panel to scroll to it.
-  When a passage fits no category, the AI proposes a new one and bbla adds it to its category list
+  When a passage fits no category, the AI proposes a new one and Blabla Meter adds it to its category list
   (editable in the options).
 - **Learns from you** — 👍/👎 on the analysis, your own score, a note on why, and ✓/✗ on each
   highlight. Every 5 feedback items the AI distils them into preference rules that go with every
@@ -80,8 +82,8 @@ Brave is Chromium under the hood, so the MV3 extension loads as-is — no build 
 
 1. `brave://extensions` → enable **Developer mode** (top right).
 2. Either **Load unpacked** → pick `bbla/extension/`, or drag-and-drop the packaged zip:
-   `./extension/build_zip.sh` → `bbla-brave-<version>.zip`.
-3. Click the bbla icon (or **Alt+B**) on any page → the side panel opens → **Analyze this page**.
+   `./extension/build_zip.sh` → `blabla-meter-<version>.zip`.
+3. Click the Blabla Meter icon (or **Alt+B**) on any page → the side panel opens → **Analyze this page**.
    Optional: pin the icon via the 🧩 puzzle piece → 📌.
 4. ⚙ Options → choose the AI provider:
 
@@ -124,5 +126,5 @@ End-to-end was verified with Playwright loading the unpacked extension in Chromi
 
 ## Support
 
-If bbla saves you time, you can [buy me a coffee ☕](https://buymeacoffee.com/maths-oliveira) — also linked
+If Blabla Meter saves you time, you can [buy me a coffee ☕](https://buymeacoffee.com/maths-oliveira) — also linked
 from the side panel header (☕) and the bottom of ⚙ Options.

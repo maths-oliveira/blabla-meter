@@ -71,7 +71,7 @@ async function run(tabId, func, args = []) {
   } catch (e) {
     await log("page", `inject ${func.name} failed`, e.message);
     throw new Error(/Cannot access|permission|chrome:\/\//i.test(e.message)
-      ? "bbla can't read this tab. Click the bbla toolbar icon while on the page (or allow all sites in the options). Browser pages (chrome://, the Web Store) can't be analyzed."
+      ? "Blabla Meter can't read this tab. Click the Blabla Meter toolbar icon while on the page (or allow all sites in the options). Browser pages (chrome://, the Web Store) can't be analyzed."
       : e.message);
   }
 }
@@ -511,7 +511,7 @@ async function restoreMarks(tabId, url) {
    every page-touching handler below goes through needOn. `clear` stays
    available so turning off can wipe marks off the current tab. */
 async function ensureEnabled() {
-  if ((await getSettings()).enabled === false) throw new Error("bbla is off — turn it on with the ⏻ toggle.");
+  if ((await getSettings()).enabled === false) throw new Error("Blabla Meter is off — turn it on with the ⏻ toggle.");
 }
 const needOn = (fn) => async (m, sender) => { await ensureEnabled(); return fn(m, sender); };
 

@@ -78,7 +78,7 @@ test("buildMessages adds news rules from the news ranker only when present", () 
 
 test("sanitizeMemory keeps the known shape and rejects junk", async () => {
   const { sanitizeMemory } = await import("../extension/lib/analysis.js");
-  assert.throws(() => sanitizeMemory({ rules: "x" }), /not a bbla memory file/);
+  assert.throws(() => sanitizeMemory({ rules: "x" }), /not a Blabla Meter memory file/);
   const m = sanitizeMemory({ rules: ["a", 5, "  "], feedback: "nope", learnedAt: "x", evil: 1,
     categories: [{ id: "c", name: "C", color: "red;x", desc: 3 }, null, { name: "no id" }] });
   assert.deepEqual(m.rules, ["a"]);

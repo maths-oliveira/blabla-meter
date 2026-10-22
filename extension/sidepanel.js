@@ -34,7 +34,7 @@ async function onTabChange() {
   tab = t;
   $("page-title").textContent = t.title || t.url || "";
   if (!(await refreshPower())) {
-    status("bbla is off — turn it on with the ⏻ toggle.");
+    status("Blabla Meter is off — turn it on with the ⏻ toggle.");
     $("result").hidden = true;
     $("deep").hidden = true;
     $("btn-deep").hidden = true;
@@ -125,7 +125,7 @@ async function showUsage(url) {
 /* Stage 1 — instant Jev score: one typed-judgment call, no generative AI.
    Runs automatically when the panel opens. */
 async function scoreFast() {
-  if (!extOn) { status("bbla is off — turn it on with the ⏻ toggle."); return; }
+  if (!extOn) { status("Blabla Meter is off — turn it on with the ⏻ toggle."); return; }
   tab = await currentTab();
   if (!/^https?:/.test(tab?.url || "")) return;
   $("btn-analyze").disabled = true;
@@ -152,7 +152,7 @@ async function scoreFast() {
 /* Stage 2 — on-demand LLM deep dive: verdict prose, pareto, highlights.
    Only runs when the reader clicks; they decide when to wait. */
 async function deepDive() {
-  if (!extOn) { $("deep-status").textContent = "bbla is off — turn it on with the ⏻ toggle."; return; }
+  if (!extOn) { $("deep-status").textContent = "Blabla Meter is off — turn it on with the ⏻ toggle."; return; }
   tab = await currentTab();
   $("btn-deep").disabled = true;
   $("deep-status").textContent = "Asking the AI… (10–60 s)";
@@ -168,7 +168,7 @@ async function deepDive() {
 }
 
 async function analyze(force = true) {
-  if (!extOn) { status("bbla is off — turn it on with the ⏻ toggle."); return; }
+  if (!extOn) { status("Blabla Meter is off — turn it on with the ⏻ toggle."); return; }
   tab = await currentTab();
   $("btn-analyze").disabled = true;
   status(force ? "Reading the page and asking the AI… (10–60 s)" : "Loading…");
@@ -294,7 +294,7 @@ $("btn-clear").onclick = async () => {
 };
 let pickListener = null;
 $("btn-score").onclick = async () => {
-  if (!extOn) { $("ads-status").textContent = "bbla is off — turn it on with the ⏻ toggle."; return; }
+  if (!extOn) { $("ads-status").textContent = "Blabla Meter is off — turn it on with the ⏻ toggle."; return; }
   tab = await currentTab();
   if (!/^https?:/.test(tab?.url || "")) return;
   const key = "scorepicked:" + new URL(tab.url).host;
@@ -317,7 +317,7 @@ $("btn-score").onclick = async () => {
   catch (e) { $("ads-status").textContent = e.message; }
 };
 $("btn-pick").onclick = async () => {
-  if (!extOn) { $("ads-status").textContent = "bbla is off — turn it on with the ⏻ toggle."; return; }
+  if (!extOn) { $("ads-status").textContent = "Blabla Meter is off — turn it on with the ⏻ toggle."; return; }
   tab = await currentTab();
   $("ads-status").textContent = "picker on: click an element… (Esc cancels)";
   try { await send({ type: "pick", tabId: tab.id }); }
@@ -448,7 +448,7 @@ $("btn-power").onclick = async () => {
     $("result").hidden = true;
     $("deep").hidden = true;
     $("btn-deep").hidden = true;
-    status("bbla is off — turn it on with the ⏻ toggle.");
+    status("Blabla Meter is off — turn it on with the ⏻ toggle.");
   } else {
     status("");
     tab = null;
@@ -458,7 +458,7 @@ $("btn-power").onclick = async () => {
 };
 
 $("btn-ads").onclick = async () => {
-  if (!extOn) { $("ads-status").textContent = "bbla is off — turn it on with the ⏻ toggle."; return; }
+  if (!extOn) { $("ads-status").textContent = "Blabla Meter is off — turn it on with the ⏻ toggle."; return; }
   tab = await currentTab();
   $("btn-ads").disabled = true;
   try {
@@ -502,7 +502,7 @@ chrome.storage.onChanged.addListener((changes, area) => {
       $("result").hidden = true;
       $("deep").hidden = true;
       $("btn-deep").hidden = true;
-      status("bbla is off — turn it on with the ⏻ toggle.");
+      status("Blabla Meter is off — turn it on with the ⏻ toggle.");
     }
   }
 });

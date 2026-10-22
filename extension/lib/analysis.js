@@ -82,7 +82,7 @@ const PALETTE = ["#0ea5e9", "#84cc16", "#eab308", "#f97316", "#d946ef", "#06b6d4
 /** Adds AI-proposed categories to memory (the "document where we learn new categories"). */
 /** Imported memory files are untrusted: keep the known shape, drop the rest, cap sizes. */
 export function sanitizeMemory(data) {
-  if (!data || !Array.isArray(data.categories) || !Array.isArray(data.rules)) throw new Error("not a bbla memory file");
+  if (!data || !Array.isArray(data.categories) || !Array.isArray(data.rules)) throw new Error("not a Blabla Meter memory file");
   const str = (v, n) => (typeof v === "string" ? v.slice(0, n) : "");
   const categories = data.categories.filter((c) => c && typeof c === "object" && str(c.id, 60) && str(c.name, 80))
     .slice(0, 40).map((c) => ({ id: str(c.id, 60), name: str(c.name, 80), desc: str(c.desc, 400),

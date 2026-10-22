@@ -1,10 +1,10 @@
-# bbla — notes for Claude
+# bbla (Blabla Meter) — notes for Claude
 
 Read `README.md`. Origin: `outline.txt` (keep it).
 
 ## Layout
 - `extension/` — MV3 (Brave/Chrome compatible, no build step), ES modules. Packaged with
-  `extension/build_zip.sh` → `bbla-brave-<version>.zip`.
+  `extension/build_zip.sh` → `blabla-meter-<version>.zip`.
   - `background.js` — service worker: message router (`analyze` = on-demand LLM deep dive,
     `pageScore` = instant Jev score shown on panel open, `pageStats`/`showBlocks` for
     freshness + badges, `pick` in block|score mode, `scoreElement` + `scoreClear` for the

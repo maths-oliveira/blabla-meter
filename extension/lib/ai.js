@@ -102,9 +102,9 @@ export function replyText(settings, data) {
 export async function chat(settings, messages, { fetchImpl = fetch, timeoutMs = 120000 } = {}) {
   const p = PROVIDERS[settings.provider] || PROVIDERS.zen;
   const url = endpointFor(settings);
-  if (!url || !/^https?:\/\//.test(url)) throw new Error("Set the endpoint URL in the bbla options.");
-  if (p.needsKey && !keyFor(settings)) throw new Error(`No API key for ${p.label}. Open the bbla options.`);
-  if (p.needsModel && !settings.model) throw new Error(`Set a model for ${p.label} in the bbla options.`);
+  if (!url || !/^https?:\/\//.test(url)) throw new Error("Set the endpoint URL in the Blabla Meter options.");
+  if (p.needsKey && !keyFor(settings)) throw new Error(`No API key for ${p.label}. Open the Blabla Meter options.`);
+  if (p.needsModel && !settings.model) throw new Error(`Set a model for ${p.label} in the Blabla Meter options.`);
   const { headers, body } = buildRequest(settings, messages);
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), timeoutMs);

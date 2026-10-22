@@ -292,7 +292,7 @@ $("export").onclick = () => {
   const blob = new Blob([JSON.stringify(doc, null, 2)], { type: "application/json" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = `bbla-memory-${new Date().toISOString().slice(0, 10)}.json`;
+  a.download = `blabla-meter-memory-${new Date().toISOString().slice(0, 10)}.json`;
   a.click();
 };
 /* Never trust an imported file: keep host→[selector] shape, cap sizes. */

@@ -240,7 +240,7 @@ export function highlightQuotes(highlights, categories) {
       mark.className = "bbla-mark";
       mark.dataset.bbla = String(f.idx);
       mark.style.setProperty("--bbla-c", colors[f.h.category] || "#f59e0b");
-      mark.title = `bbla · ${names[f.h.category] || f.h.category}: ${f.h.why}`;
+      mark.title = `Blabla Meter · ${names[f.h.category] || f.h.category}: ${f.h.why}`;
       try { range.surroundContents(mark); } catch { continue; }
     }
     ok.add(f.idx);
@@ -343,7 +343,7 @@ export function showBlockScores(items, opts) {
     b.className = "bbla-badge";
     b.textContent = Number.isFinite(s) ? String(s) : "?";
     b.style.background = !Number.isFinite(s) ? "#64748b" : s >= 60 ? "#16a34a" : s >= 35 ? "#d97706" : "#dc2626";
-    const lines = [`bbla block score ${b.textContent}/100`];
+    const lines = [`Blabla Meter · section score ${b.textContent}/100`];
     for (const t of it.tags || []) lines.push(`· ${t}`);
     for (const a of it.ai || []) lines.push(`AI: ${a}`);
     b.title = lines.join("\n");
