@@ -4,7 +4,7 @@ Copy-paste source for the developer dashboard. Keep in sync with `extension/mani
 
 > The rejected submission was flagged for keyword spam because its description listed many AI
 > providers by name. This copy keeps the same features but removes provider/model name lists.
-> Update the dashboard listing before resubmitting.
+> The 0.9.3 resubmission uses this copy and is pending review (submitted Oct 24, 2026).
 
 ## Store listing tab
 
@@ -97,6 +97,6 @@ Visibility: Public. Regions: all.
 `./extension/build_zip.sh --out .` → `blabla-meter-<version>.zip`. Bump `version` in `extension/manifest.json` before each new upload.
 
 For 0.9.3, use the copy above, keep the Support/Homepage URLs, and make sure the listing says the
-instant score needs a separate scoring key while the AI summary is on demand. The rejected
-submission was flagged for keyword spam; update the dashboard description before resubmitting,
-and do not reuse the old provider-name list.
+instant score needs a separate scoring key while the AI summary is on demand. The 0.9.3
+resubmission uses this copy and was submitted on Oct 24, 2026; it is pending review. Do not reuse
+the old provider-name list.
