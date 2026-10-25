@@ -7,7 +7,10 @@ and the development override.
 
 import os
 import sys
+import threading
 import unittest
+import urllib.error
+import urllib.request
 from pathlib import Path
 from unittest.mock import patch
 
@@ -57,6 +60,34 @@ class BridgeOriginTest(unittest.TestCase):
         with patch.dict(os.environ, {"BBLA_EXTENSION_IDS": "firefox-dev-id"}, clear=False):
             self.assertTrue(bridge.allowed("moz-extension://firefox-dev-id"))
             self.assertFalse(bridge.allowed("moz-extension://other-firefox-id"))
+
+    def test_http_handler_enforces_the_allowlist(self):
+        srv = bridge.ThreadingHTTPServer(("127.0.0.1", 0), bridge.Handler)
+        port = srv.server_address[1]
+        thread = threading.Thread(target=srv.serve_forever, daemon=True)
+        thread.start()
+        try:
+            def request(method="GET", origin=None):
+                req = urllib.request.Request(f"http://127.0.0.1:{port}/health", method=method)
+                if origin:
+                    req.add_header("Origin", origin)
+                try:
+                    with urllib.request.urlopen(req, timeout=5) as res:
+                        return res.status, res.headers.get("Access-Control-Allow-Origin")
+                except urllib.error.HTTPError as exc:
+                    return exc.code, exc.headers.get("Access-Control-Allow-Origin")
+
+            self.assertEqual(request()[0], 200)
+            allowed = f"chrome-extension://{STORE_ID}"
+            self.assertEqual(request("GET", allowed), (200, allowed))
+            self.assertEqual(request("OPTIONS", allowed), (204, allowed))
+            self.assertEqual(request("GET", "chrome-extension://other")[0], 403)
+            self.assertEqual(request("OPTIONS", "chrome-extension://other")[0], 403)
+            self.assertEqual(request("GET", "https://evil.example")[0], 403)
+        finally:
+            srv.shutdown()
+            srv.server_close()
+            thread.join(timeout=5)
 
 
 if __name__ == "__main__":
