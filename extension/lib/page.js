@@ -241,6 +241,9 @@ export function highlightQuotes(highlights, categories) {
       mark.dataset.bbla = String(f.idx);
       mark.style.setProperty("--bbla-c", colors[f.h.category] || "#f59e0b");
       mark.title = `Blabla Meter · ${names[f.h.category] || f.h.category}: ${f.h.why}`;
+      mark.tabIndex = 0;
+      mark.setAttribute("role", "note");
+      mark.setAttribute("aria-label", mark.title);
       try { range.surroundContents(mark); } catch { continue; }
     }
     ok.add(f.idx);
@@ -328,7 +331,7 @@ export function showBlockScores(items, opts) {
   if (!document.getElementById("bbla-badge-style")) {
     const st = document.createElement("style");
     st.id = "bbla-badge-style";
-    st.textContent = ".bbla-badge{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;border-radius:999px;color:#fff;font:700 12px/1 system-ui,sans-serif;padding:0 5px;margin-right:6px;vertical-align:2px;cursor:help}.bbla-badge::before{content:attr(data-score)}h1>.bbla-badge,h2>.bbla-badge,h3>.bbla-badge,h4>.bbla-badge,h5>.bbla-badge,h6>.bbla-badge{vertical-align:middle;margin-right:8px}";
+    st.textContent = ".bbla-badge{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;border-radius:999px;color:#fff;font:700 12px/1 system-ui,sans-serif;padding:0 5px;margin-right:6px;vertical-align:2px;cursor:help}.bbla-badge:focus-visible{outline:3px solid #7c3aed!important;outline-offset:2px}.bbla-badge::before{content:attr(data-score)}h1>.bbla-badge,h2>.bbla-badge,h3>.bbla-badge,h4>.bbla-badge,h5>.bbla-badge,h6>.bbla-badge{vertical-align:middle;margin-right:8px}";
     document.head.appendChild(st);
   }
   let shown = 0, missing = 0;
@@ -344,11 +347,15 @@ export function showBlockScores(items, opts) {
     // The number is CSS-generated (::before), so it never leaks into innerText
     // when headings and section excerpts are re-read for the next scoring.
     b.dataset.score = Number.isFinite(s) ? String(s) : "?";
-    b.style.background = !Number.isFinite(s) ? "#64748b" : s >= 60 ? "#16a34a" : s >= 35 ? "#d97706" : "#dc2626";
+    // White text on these darker shades stays above 4.5:1 contrast.
+    b.style.background = !Number.isFinite(s) ? "#475569" : s >= 60 ? "#15803d" : s >= 35 ? "#b45309" : "#b91c1c";
     const lines = [`Blabla Meter · section score ${b.dataset.score}/100`];
-    for (const t of it.tags || []) lines.push(`· ${t}`);
-    for (const a of it.ai || []) lines.push(`AI: ${a}`);
+    for (const t of (Array.isArray(it.tags) ? it.tags : [])) lines.push(`· ${t}`);
+    for (const a of (Array.isArray(it.ai) ? it.ai : [])) lines.push(`AI: ${a}`);
     b.title = lines.join("\n");
+    b.tabIndex = 0;
+    b.setAttribute("role", "note");
+    b.setAttribute("aria-label", lines.join(" · "));
     // Inside real headings, so the badge sits on the heading line instead of
     // reading as the end of the previous section. Card headlines with
     // line-clamp/ellipsis would clip an inner badge: those get it just before.

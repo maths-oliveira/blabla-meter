@@ -3,6 +3,8 @@
 Providers
   - ``cli``        the installed ``opencode`` binary (``opencode run``). Serves OpenCode's free
                    models, which the HTTP API only allows from inside OpenCode. No key needed.
+                   The agent has local tools and the page text is untrusted input; use a plain
+                   API provider instead when scoring untrusted pages.
   - ``zen``        OpenCode Zen HTTP API (pay per use), OpenAI-compatible.
   - ``go``         OpenCode Go subscription HTTP API.
   - ``openrouter`` OpenRouter (``openrouter/free`` routes to a free model).

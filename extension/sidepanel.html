@@ -8,19 +8,19 @@
 </head>
 <body>
 <header class="top">
-  <strong>Blabla Meter</strong>
+  <h1 class="brand">Blabla Meter</h1>
   <button id="btn-power" type="button" title="Turn the whole extension on/off (no scoring, badges or ad-blocking while off)">⏻ on</button>
   <span id="page-title" class="muted small ellipsis"></span>
-  <a id="news-link" href="http://127.0.0.1:8805/" target="_blank" class="icon-btn" title="Useful news: ranked with the same preferences (news/, start with bbla/run)" hidden>📰</a>
-  <a href="options.html" target="_blank" class="icon-btn" title="Options & memory">⚙</a>
-  <a href="https://buymeacoffee.com/maths.oliveira" target="_blank" rel="noopener" class="icon-btn" title="Like Blabla Meter? Buy me a coffee">☕</a>
+  <a id="news-link" href="http://127.0.0.1:8805/" target="_blank" class="icon-btn" aria-label="Open useful news" title="Useful news: ranked with the same preferences (news/, start with bbla/run)" hidden>📰</a>
+  <a href="options.html" target="_blank" class="icon-btn" aria-label="Options and memory" title="Options &amp; memory">⚙</a>
+  <a href="https://buymeacoffee.com/maths.oliveira" target="_blank" rel="noopener" class="icon-btn" aria-label="Support Blabla Meter with a coffee" title="Like Blabla Meter? Buy me a coffee">☕</a>
 </header>
 
 <main>
   <section id="usage" class="usage" hidden></section>
 
   <section id="setup" class="card" hidden>
-    <h3>Set up your AI</h3>
+    <h3 id="setup-title">Set up your AI</h3>
     <p id="setup-msg" class="muted small"></p>
     <div class="row">
       <a id="setup-open" class="btn" href="options.html" target="_blank">⚙ Options</a>
@@ -37,9 +37,9 @@
     <button id="btn-pick" type="button" title="Click a page element to block it on this site (Unclutter-style)">⛔ block</button>
     <button id="btn-score" type="button" title="Click a section to score just it — it learns the area for this site">◉ score</button>
     <button id="btn-log" type="button" title="Download diagnostic log: what the page gave + what the extension answered (no keys inside)">🧾 log</button>
-    <span id="ads-status" class="muted small"></span>
+    <span id="ads-status" class="muted small" role="status" aria-live="polite"></span>
   </div>
-  <p id="status" class="status" hidden></p>
+  <p id="status" class="status" role="status" aria-live="polite" hidden></p>
 
   <section id="result" hidden>
     <div class="scorebox">
@@ -49,7 +49,7 @@
     <p id="meta" class="muted small"></p>
     <div class="row" style="margin-top:6px">
       <button id="btn-deep" class="primary grow" type="button" hidden>AI summary & highlights</button>
-      <span id="deep-status" class="muted small"></span>
+      <span id="deep-status" class="muted small" role="status" aria-live="polite"></span>
     </div>
 
     <details id="outline-box">
@@ -70,12 +70,12 @@
     <h3>Your feedback</h3>
     <div class="fb">
       <div class="row">
-        <button id="fb-up" type="button" title="good analysis">👍</button>
-        <button id="fb-down" type="button" title="bad analysis">👎</button>
-        <input id="fb-score" type="number" min="0" max="100" placeholder="my score">
+        <button id="fb-up" type="button" title="good analysis" aria-label="Good analysis">👍</button>
+        <button id="fb-down" type="button" title="bad analysis" aria-label="Bad analysis">👎</button>
+        <input id="fb-score" type="number" min="0" max="100" placeholder="my score" aria-label="Your score, 0 to 100">
       </div>
-      <textarea id="fb-note" rows="2" placeholder="Why? e.g. 'score too high, this is a press release' — Blabla Meter learns from it"></textarea>
-      <div class="row end"><span id="fb-saved" class="muted small"></span><button id="fb-send" type="button" class="primary">Send feedback</button></div>
+      <textarea id="fb-note" rows="2" placeholder="Why? e.g. 'score too high, this is a press release' — Blabla Meter learns from it" aria-label="Why you gave this feedback"></textarea>
+      <div class="row end"><span id="fb-saved" class="muted small" role="status" aria-live="polite"></span><button id="fb-send" type="button" class="primary">Send feedback</button></div>
     </div>
     </section>
   </section>

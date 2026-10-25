@@ -16,12 +16,20 @@ const KEY_HELP = {
   mistral: "Mistral key (console.mistral.ai → API keys). Has a free tier.",
   deepseek: "DeepSeek key (platform.deepseek.com → API keys). Pay per use, cheap.",
   ollama: "Free, runs on this computer. Type a model you pulled (e.g. llama3.2). A 403 means Ollama refuses the extension: start it with OLLAMA_ORIGINS=chrome-extension://*.",
-  bridge: "Runs the free OpenCode models through the opencode installed on this computer: start bridge/bridge.py (see README).",
+  bridge: "Runs the free OpenCode models through the opencode installed on this computer: start bridge/bridge.py (see README). The installed agent has local tools; use a plain API provider for untrusted pages.",
   custom: "Any OpenAI-compatible server (key optional).",
 };
 
 let settings = { ...DEFAULT_SETTINGS };
 let memory = { ...EMPTY_MEMORY };
+
+function safeMemory(data) {
+  try {
+    return sanitizeMemory(data);
+  } catch {
+    return sanitizeMemory({ rules: [], categories: [], feedback: [] });
+  }
+}
 
 function send(msg) {
   return new Promise((resolve, reject) => chrome.runtime.sendMessage(msg, (res) => {
@@ -41,7 +49,7 @@ async function load() {
   settings.adsThresholds = { ...DEFAULT_ADS_THRESHOLDS, ...(settings.adsThresholds || {}) };
   if (!settings.customBlocks || typeof settings.customBlocks !== "object") settings.customBlocks = {};
   if (!settings.scoreSelectors || typeof settings.scoreSelectors !== "object") settings.scoreSelectors = {};
-  memory = { ...EMPTY_MEMORY, ...(data.memory || {}) };
+  memory = safeMemory(data.memory);
   // Pre-0.9.1 installs kept one key for every provider: file it under the
   // provider it was saved with, so switching providers can't leak it.
   if (!settings.keys || typeof settings.keys !== "object") settings.keys = {};
@@ -84,19 +92,24 @@ function syncFields() {
 }
 
 function renderMemory() {
-  $("rules").value = memory.rules.join("\n");
+  const rules = Array.isArray(memory.rules) ? memory.rules : [];
+  const categories = Array.isArray(memory.categories) ? memory.categories : [];
+  const feedback = Array.isArray(memory.feedback) ? memory.feedback : [];
+  $("rules").value = rules.join("\n");
   $("mem-info").textContent = memory.learnedAt ? `last learned ${new Date(memory.learnedAt).toLocaleString()}` : "not learned yet";
-  $("cats").innerHTML = memory.categories.map((c, i) => `
+  $("cats").innerHTML = categories.map((c, i) => `
     <tr data-i="${i}">
-      <td><input type="color" data-f="color" value="${esc(c.color || "#f59e0b")}"></td>
-      <td><input type="text" data-f="name" value="${esc(c.name)}">${c.learned ? '<span class="muted small">learned</span>' : ""}</td>
-      <td><textarea data-f="desc" rows="2">${esc(c.desc)}</textarea></td>
-      <td><button type="button" data-del="${i}" title="delete">✕</button></td>
+      <td><input type="color" data-f="color" aria-label="Category color" value="${esc(c.color || "#f59e0b")}"></td>
+      <td><input type="text" data-f="name" aria-label="Category name" value="${esc(c.name)}">${c.learned ? '<span class="muted small">learned</span>' : ""}</td>
+      <td><textarea data-f="desc" rows="2" aria-label="Category meaning">${esc(c.desc)}</textarea></td>
+      <td><button type="button" data-del="${i}" title="delete" aria-label="Delete category ${esc(c.name)}">✕</button></td>
     </tr>`).join("");
-  $("feedback").innerHTML = memory.feedback.slice(-15).reverse().map((f) => {
-    const what = f.highlight ? `${f.highlight.verdict === "right" ? "✓" : "✗"} highlight “${esc(f.highlight.quote.slice(0, 60))}”`
-      : `${f.vote === 1 ? "👍" : f.vote === -1 ? "👎" : ""} model ${f.modelScore ?? "?"}${f.userScore != null ? ` → mine ${f.userScore}` : ""}`;
-    return `<li><b>${esc(f.host || "")}</b> ${what}${f.note ? ` — “${esc(f.note)}”` : ""}</li>`;
+  $("feedback").innerHTML = feedback.slice(-15).reverse().map((f) => {
+    const h = f?.highlight && typeof f.highlight === "object" ? f.highlight : null;
+    const quote = typeof h?.quote === "string" ? h.quote : "";
+    const what = h ? `${h.verdict === "right" ? "✓" : "✗"} highlight “${esc(quote.slice(0, 60))}”`
+      : `${f?.vote === 1 ? "👍" : f?.vote === -1 ? "👎" : ""} model ${esc(f?.modelScore ?? "?")}${f?.userScore != null ? ` → mine ${esc(f.userScore)}` : ""}`;
+    return `<li><b>${esc(f?.host || "")}</b> ${what}${f?.note ? ` — “${esc(f.note)}”` : ""}</li>`;
   }).join("") || '<li class="muted">No feedback yet.</li>';
 }
 
@@ -331,12 +344,12 @@ $("import").onchange = async (e) => {
 };
 $("reset").onclick = async () => {
   if (!confirm("Forget all rules, learned categories and feedback?")) return;
-  memory = { ...EMPTY_MEMORY };
+  memory = safeMemory({ rules: [], categories: [], feedback: [] });
   await saveMemory();
 };
 $("reload-ext").onclick = () => chrome.runtime.reload();
 chrome.storage.onChanged.addListener((changes) => {
-  if (changes.memory) { memory = { ...EMPTY_MEMORY, ...changes.memory.newValue }; renderMemory(); }
+  if (changes.memory) { memory = safeMemory(changes.memory.newValue); renderMemory(); }
   if (changes.settings) { settings = { ...settings, ...changes.settings.newValue }; renderBlocks(); renderScoreAreas(); paintEnabled(); }
 });
 

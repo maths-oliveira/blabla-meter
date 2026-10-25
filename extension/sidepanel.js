@@ -8,8 +8,12 @@ let fast = null;      // instant Jev score (no generative AI)
 let analysis = null;  // on-demand LLM deep dive (verdict, pareto, highlights)
 let vote = 0;
 let bridgeUp = null;        // null until checked; false = local helper not running
+let jevReady = null;        // null until checked; false = bridge up but no TypeSafe key
 let hasProvider = true;     // can the configured AI provider answer right now?
 let primaryAction = "fast"; // fast | deep | setup
+let navSeq = 0;             // bumps on tab/page changes; stale async results are dropped
+let scoreSeq = 0;           // bumps on each instant-score request
+let deepSeq = 0;            // bumps on each deep-dive request
 
 function send(msg) {
   return new Promise((resolve, reject) => {
@@ -40,10 +44,20 @@ async function bridgeBase() {
    another local app. Check both so the panel doesn't offer dead actions. */
 async function checkBridge() {
   try {
-    const r = await fetch((await bridgeBase()) + "/health", { signal: AbortSignal.timeout(1500) });
+    const base = await bridgeBase();
+    const r = await fetch(base + "/health", { signal: AbortSignal.timeout(1500) });
     bridgeUp = r.ok;
+    if (bridgeUp) {
+      try {
+        const a = await fetch(base + "/ads/status", { signal: AbortSignal.timeout(1500) });
+        jevReady = a.ok ? !!(await a.json()).jev_available : null;
+      } catch { jevReady = null; }
+    } else {
+      jevReady = null;
+    }
   } catch {
     bridgeUp = false;
+    jevReady = null;
   }
   try {
     // no-cors: the news app has no CORS headers; resolving at all means it is up.
@@ -74,17 +88,23 @@ function setPrimary(action, label, title = "") {
 async function refreshSetup() {
   hasProvider = await providerReady();
   const bridgeDown = bridgeUp === false;
-  const show = !hasProvider || bridgeDown;
+  const { settings } = await chrome.storage.local.get("settings");
+  const hasJevKey = !!String(settings?.typesafeKey || "").trim();
+  const jevMissing = bridgeUp === true && jevReady === false && !hasJevKey;
+  const show = !hasProvider || bridgeDown || jevMissing;
   $("setup").hidden = !show;
   if (show) {
+    $("setup-title").textContent = jevMissing ? "Set up instant scoring" : "Set up your AI";
     $("setup-msg").textContent = !hasProvider
       ? "Pick an AI provider in Options, paste your key, and come back. Gemini, Groq, Mistral and OpenRouter have free tiers; Ollama runs locally."
-      : "The instant score and section badges need the optional local helper. AI summary & highlights works with your configured provider.";
-    $("setup-open").textContent = "⚙ Options";
+      : bridgeDown
+        ? "The instant score and section badges need the optional local helper. AI summary & highlights works with your configured provider."
+        : "The instant score needs a TypeSafe key. Add one in Options, or use AI summary & highlights — no AI call is made automatically.";
+    $("setup-open").textContent = jevMissing ? "⚙ Add TypeSafe key" : "⚙ Options";
     $("setup-key").hidden = hasProvider;
   }
   if (!hasProvider) setPrimary("setup", "Set up your AI", "Choose an AI provider in Options");
-  else if (bridgeDown) setPrimary("deep", "AI summary & highlights", "The instant score needs the local helper; this runs the AI deep dive.");
+  else if (bridgeDown || jevMissing) setPrimary("deep", "AI summary & highlights", "The instant score is unavailable; this runs the AI deep dive only when you click.");
   else setPrimary("fast", "Score this page", "");
   // Don't show a second, identical deep-dive button when the primary is already it.
   if (primaryAction !== "fast") $("btn-deep").hidden = true;
@@ -94,8 +114,13 @@ async function onTabChange() {
   const t = await currentTab();
   if (!t || (tab && t.id === tab.id && t.url === tab.url)) return;
   tab = t;
+  const seq = ++navSeq; // any request from the previous tab is now stale
+  const scoreAt = scoreSeq, deepAt = deepSeq;
   $("page-title").textContent = t.title || t.url || "";
+  $("btn-analyze").disabled = false;
+  $("btn-deep").disabled = false;
   if (!(await refreshPower())) {
+    if (seq !== navSeq) return;
     status("Blabla Meter is off — turn it on with the ⏻ toggle.");
     $("result").hidden = true;
     $("deep").hidden = true;
@@ -104,6 +129,7 @@ async function onTabChange() {
   }
   showUsage(t.url);
   await refreshSetup();
+  if (seq !== navSeq) return;
   $("result").hidden = true;
   $("deep").hidden = true;
   $("btn-deep").hidden = true;
@@ -116,44 +142,58 @@ async function onTabChange() {
   // show the cached fast score for this URL, if any (no AI call)
   const fkey = "pagescore:" + (t.url || "").split("#")[0];
   const fcached = (await chrome.storage.session.get(fkey))[fkey];
+  if (seq !== navSeq || scoreAt !== scoreSeq || deepAt !== deepSeq) return;
   if (fcached) {
     fast = fcached;
     await showScore(fast);
+    if (seq !== navSeq || scoreAt !== scoreSeq || deepAt !== deepSeq) return;
     const dkey = "analysis:" + (t.url || "").split("#")[0];
     const dcached = (await chrome.storage.session.get(dkey))[dkey];
     if (dcached) {
       analysis = dcached;
       await showDeep(analysis);
+      if (seq !== navSeq || scoreAt !== scoreSeq || deepAt !== deepSeq) return;
     }
     // Same URL but a different body (hydration, SPA navigation, live feed):
     // re-score instead of showing a stale number.
     if (hasProvider && bridgeUp !== false) {
       try {
         const st = await send({ type: "pageStats", tabId: t.id });
+        if (seq !== navSeq || scoreAt !== scoreSeq || deepAt !== deepSeq) return;
         const old = fast.chars || 0;
         if (old > 0 && Math.abs(st.chars - old) / old > 0.35) {
           status("Page content changed — updating score…");
-          await scoreFast();
+          scoreFast();
         }
       } catch {}
     }
-  } else if (hasProvider && bridgeUp !== false) {
+  } else if (hasProvider && bridgeUp !== false && scoreAt === scoreSeq && deepAt === deepSeq) {
     scoreFast();
   }
   // re-apply ad-blocking on the new page while the toggle stays ON
   try {
     const st = await send({ type: "adsGet" });
+    if (seq !== navSeq) return;
     adsOn = !!st.enabled;
     paintAds(null);
     if (adsOn && /^https?:/.test(t.url || "")) {
-      send({ type: "adsRun", tabId: t.id }).then(paintAds, (e) => { $("ads-status").textContent = e.message; });
+      const adsTabId = t.id, adsUrl = t.url;
+      const paintIfCurrent = (r) => {
+        if (tab?.id === adsTabId && tab?.url === adsUrl) paintAds(r);
+      };
+      send({ type: "adsRun", tabId: adsTabId }).then(paintIfCurrent, (e) => {
+        if (tab?.id === adsTabId && tab?.url === adsUrl) $("ads-status").textContent = e.message;
+      });
     }
   } catch {}
 }
 
 /* Time spent on this site, from the usage report served by the local bridge (usage/, ex cchrome). */
-const fmtTime = (s) => s >= 3600 ? `${Math.floor(s / 3600)}h${String(Math.round((s % 3600) / 60)).padStart(2, "0")}` : `${Math.round(s / 60)} min`;
-const fmtDay = (iso) => iso.slice(8, 10) + "/" + iso.slice(5, 7);
+const fmtTime = (s) => {
+  const n = Number(s) || 0;
+  return n >= 3600 ? `${Math.floor(n / 3600)}h${String(Math.round((n % 3600) / 60)).padStart(2, "0")}` : `${Math.round(n / 60)} min`;
+};
+const fmtDay = (iso) => typeof iso === "string" ? iso.slice(8, 10) + "/" + iso.slice(5, 7) : "?";
 async function showUsage(url) {
   const box = $("usage");
   box.hidden = true;
@@ -172,11 +212,11 @@ async function showUsage(url) {
   }
   const color = u.score >= 60 ? "var(--good)" : u.score >= 35 ? "var(--mid)" : "var(--bad)";
   box.innerHTML = `<div class="row"><b>⏱ ${esc(u.key)}</b><span class="chip" style="--c:${color}" title="usefulness of this category (usage report)">${esc(u.category)} · ${Math.round(u.score)}/100</span></div>` +
-    (u.total ? `<div class="usage-nums"><span><b>${fmtTime(u.week)}</b> last 7 days${u.rank_week ? ` · #${u.rank_week}` : ""}</span>` +
+    (u.total ? `<div class="usage-nums"><span><b>${fmtTime(u.week)}</b> last 7 days${u.rank_week ? ` · #${esc(u.rank_week)}` : ""}</span>` +
       `<span><b>${fmtTime(u.total)}</b> since ${fmtDay(u.since)}</span></div>`
       : `<div class="muted small">No time recorded on this site.</div>`) +
     `<div class="row small muted"><span class="grow">report until ${fmtDay(u.until)}</span>` +
-    `<button type="button" id="usage-rebuild" class="link">↻ update</button><a href="${base}/usage" target="_blank">full report ↗</a></div>`;
+    `<button type="button" id="usage-rebuild" class="link">↻ update</button><a href="${esc(base)}/usage" target="_blank">full report ↗</a></div>`;
   box.hidden = false;
   $("usage-rebuild").onclick = async (e) => {
     e.target.disabled = true;
@@ -187,36 +227,47 @@ async function showUsage(url) {
 }
 
 /* Stage 1 — instant Jev score: one typed-judgment call, no generative AI.
-   Runs automatically when the panel opens. */
+   Runs automatically when the panel opens. It never falls back to a
+   generative AI call; the reader chooses the deep dive explicitly. */
 async function scoreFast() {
   if (!extOn) { status("Blabla Meter is off — turn it on with the ⏻ toggle."); return; }
-  tab = await currentTab();
-  if (!/^https?:/.test(tab?.url || "")) return;
+  const nav = navSeq;
+  const seq = ++scoreSeq;
+  const t = await currentTab();
+  if (nav !== navSeq || !t || !/^https?:/.test(t.url || "")) return;
+  tab = t;
+  const tabId = t.id, url = t.url;
   $("btn-analyze").disabled = true;
   status("Scoring with Jev…");
   try {
-    fast = await send({ type: "pageScore", tabId: tab.id });
+    const f = await send({ type: "pageScore", tabId });
+    if (seq !== scoreSeq || nav !== navSeq || tab?.id !== tabId || tab?.url !== url) return;
+    fast = f;
     await showScore(fast);
-    status("");
+    if (seq === scoreSeq && nav === navSeq) status("");
   } catch (e) {
+    if (seq !== scoreSeq || nav !== navSeq) return;
     if (e.message === "NO_JEV_KEY") {
-      // No TypeSafe key: fall back to the full AI analysis (old behavior).
-      status("The instant score needs a TypeSafe/Jev key — running the full AI analysis instead (⚙ Options → Jev ad-block).");
-      await analyze(true);
-      status("");
+      // No TypeSafe key: offer the on-demand deep dive instead. Do not spend
+      // the reader's AI tokens without an explicit click.
+      jevReady = false;
+      await refreshSetup();
+      if (seq !== scoreSeq || nav !== navSeq) return;
+      status("The instant score needs a TypeSafe key. Add one in ⚙ Options, or use “AI summary & highlights” — no AI call was made.");
     } else if (e.message === "NO_BRIDGE") {
       // Store installs usually run without the local bridge: not an error.
       bridgeUp = false;
+      jevReady = null;
       await refreshSetup();
       status(hasProvider
         ? "The instant score needs the optional local helper. Use “AI summary & highlights”."
         : "The instant score needs the optional local helper. Set up a provider in ⚙ Options.");
     } else {
       status(e.message + await autoLog("score-failed", e), true);
-      $("btn-deep").hidden = false; // the deep dive may still work via a cloud provider
+      if (primaryAction === "fast") $("btn-deep").hidden = false; // the deep dive may still work via a cloud provider
     }
   } finally {
-    $("btn-analyze").disabled = false;
+    if (seq === scoreSeq) $("btn-analyze").disabled = false;
   }
 }
 
@@ -224,98 +275,120 @@ async function scoreFast() {
    Only runs when the reader clicks; they decide when to wait. */
 async function deepDive() {
   if (!extOn) { $("deep-status").textContent = "Blabla Meter is off — turn it on with the ⏻ toggle."; return; }
-  tab = await currentTab();
+  const nav = navSeq;
+  const seq = ++deepSeq;
+  const t = await currentTab();
+  if (nav !== navSeq || !t || !/^https?:/.test(t.url || "")) return;
+  tab = t;
+  const tabId = t.id, url = t.url;
   $("btn-deep").disabled = true;
+  $("btn-analyze").disabled = true;
   $("deep-status").textContent = "Asking the AI… (10–60 s)";
   try {
-    analysis = await send({ type: "analyze", tabId: tab.id, force: true });
-    await showDeep(analysis);
-    $("deep-status").textContent = "";
+    const a = await send({ type: "analyze", tabId, force: true });
+    if (seq !== deepSeq || nav !== navSeq || tab?.id !== tabId || tab?.url !== url) return;
+    analysis = a;
+    await showDeep(a);
+    if (seq === deepSeq && nav === navSeq) $("deep-status").textContent = "";
   } catch (e) {
+    if (seq !== deepSeq || nav !== navSeq) return;
     $("deep-status").textContent = e.message + await autoLog("deep-dive-failed", e);
   } finally {
-    $("btn-deep").disabled = false;
+    if (seq === deepSeq) {
+      $("btn-deep").disabled = false;
+      $("btn-analyze").disabled = false;
+    }
   }
 }
 
-async function analyze(force = true) {
-  if (!extOn) { status("Blabla Meter is off — turn it on with the ⏻ toggle."); return; }
-  tab = await currentTab();
-  $("btn-analyze").disabled = true;
-  status(force ? "Reading the page and asking the AI… (10–60 s)" : "Loading…");
-  try {
-    analysis = await send({ type: "analyze", tabId: tab.id, force });
-    if (!fast) {
-      fast = { score: analysis.score, tags: null, url: analysis.url, title: analysis.title,
-        chars: analysis.chars, words: analysis.words || 0, headings: analysis.headings || [], ms: analysis.ms };
-    }
-    await showScore(fast);
-    await showDeep(analysis);
-    status("");
-  } catch (e) {
-    status(e.message + await autoLog("analyze-failed", e), true);
-  } finally {
-    $("btn-analyze").disabled = false;
-  }
+function categoriesFrom(memory) {
+  const list = Array.isArray(memory?.categories) ? memory.categories : [];
+  return Object.fromEntries(list.filter((c) => c && typeof c === "object" && typeof c.id === "string")
+    .map((c) => [c.id, c]));
+}
+
+function categoryColor(cats, id) {
+  const color = cats[id]?.color;
+  return /^#[0-9a-f]{6}$/i.test(color || "") ? color : "#999";
 }
 
 async function showScore(f) {
+  if (!f || (f.url && tab?.url && String(f.url).split("#")[0] !== String(tab.url).split("#")[0])) return;
+  const shownFor = tab?.id;
   const { memory } = await chrome.storage.local.get("memory");
-  const cats = Object.fromEntries((memory?.categories || []).map((c) => [c.id, c]));
+  if (tab?.id !== shownFor) return;
+  if (f.url && tab?.url && String(f.url).split("#")[0] !== String(tab.url).split("#")[0]) return;
+  const cats = categoriesFrom(memory);
   $("result").hidden = false;
   $("deep").hidden = true;
-  const s = f.score;
+  const rawScore = Number(f.score);
+  const s = Number.isFinite(rawScore) ? Math.max(0, Math.min(100, Math.round(rawScore))) : null;
   $("score").textContent = s ?? "?";
   const color = s == null ? "var(--mut)" : s >= 60 ? "var(--good)" : s >= 35 ? "var(--mid)" : "var(--bad)";
   $("gauge").style.setProperty("--p", s ?? 0);
   $("gauge").style.setProperty("--c", color);
-  if (f.tags) {
+  if (f.tags && typeof f.tags === "object") {
     const pretty = (t) => String(t || "other").replace(/_/g, " ");
     const chips = [`<span class="chip" style="--c:#0ea5e9">≈ ${esc(pretty(f.tags.topic))}</span>`];
-    for (const d of f.tags.scores || []) {
-      chips.push(`<span class="chip" style="--c:var(--mut)" title="${esc(d.label)}">${esc(d.label)} ${d.value.toFixed(1)}</span>`);
+    for (const d of (Array.isArray(f.tags.scores) ? f.tags.scores : [])) {
+      const value = Number(d?.value);
+      chips.push(`<span class="chip" style="--c:var(--mut)" title="${esc(d?.label)}">${esc(d?.label)} ${Number.isFinite(value) ? value.toFixed(1) : "?"}</span>`);
     }
-    for (const g of f.tags.flags || []) {
-      chips.push(`<span class="chip" style="--c:${cats[g.cat]?.color || "#999"}" title="Jev probability ${g.p.toFixed(2)}">${esc(g.label)}</span>`);
+    for (const g of (Array.isArray(f.tags.flags) ? f.tags.flags : [])) {
+      const p = Number(g?.p);
+      chips.push(`<span class="chip" style="--c:${categoryColor(cats, g?.cat)}" title="Jev probability ${Number.isFinite(p) ? p.toFixed(2) : "?"}">${esc(g?.label)}</span>`);
     }
     $("score-tags").innerHTML = chips.join("");
   } else {
     $("score-tags").innerHTML = '<span class="muted small">full AI analysis</span>';
   }
-  $("meta").textContent = `${Math.round(f.chars / 1000)}k chars · ${(f.ms / 1000).toFixed(0)} s`
+  const chars = Number(f.chars) || 0, ms = Number(f.ms) || 0;
+  $("meta").textContent = `${Math.round(chars / 1000)}k chars · ${(ms / 1000).toFixed(0)} s`
     + (f.model ? ` · ${f.model}` : "") + (f.blocksCached ? ` · ${f.blocksCached} reused` : "");
   // Unclutter-style reading time + outline (from the extracted page, no AI needed).
-  const mins = Math.max(1, Math.round((f.words || f.chars / 6) / 200));
-  const heads = f.headings || [];
+  const mins = Math.max(1, Math.round((Number(f.words) || chars / 6) / 200));
+  const heads = Array.isArray(f.headings) ? f.headings : [];
   $("outline-sum").textContent = `⏱ ~${mins} min read · ${heads.length ? heads.length + " sections" : "no sections"}`;
   $("outline-box").open = false;
-  $("outline").innerHTML = heads.map((h) =>
-    `<li data-hid="${esc(h.id)}" style="margin-left:${(h.level - 1) * 10}px">${esc(h.text)}</li>`).join("");
+  $("outline").innerHTML = heads.map((h) => {
+    const level = Math.max(1, Math.min(6, Number(h?.level) || 1));
+    return `<li data-hid="${esc(h?.id)}" tabindex="0" style="margin-left:${(level - 1) * 10}px">${esc(h?.text)}</li>`;
+  }).join("");
   $("btn-deep").hidden = primaryAction !== "fast";
   $("deep-status").textContent = "";
   let badges = 0;
+  const badgeTabId = tab?.id;
   if (tab) badges = await send({ type: "showBlocks", tabId: tab.id, url: f.url }).catch(() => 0);
+  if (tab?.id !== badgeTabId) return;
+  if (tab?.url && f.url && String(tab.url).split("#")[0] !== String(f.url).split("#")[0]) return;
   $("meta").textContent += badges > 0 ? ` · ${badges} section badges`
-    : (f.blockScores?.length ? " · badges failed — see 🧾 log" : " · no scorable sections");
+    : (Array.isArray(f.blockScores) && f.blockScores.length ? " · badges failed — see 🧾 log" : " · no scorable sections");
   marksOn = true;
   paintMarks();
 }
 
 async function showDeep(a) {
+  if (!a || (a.url && tab?.url && String(a.url).split("#")[0] !== String(tab.url).split("#")[0])) return;
+  const shownFor = tab?.id;
   const { memory } = await chrome.storage.local.get("memory");
-  const cats = Object.fromEntries((memory?.categories || []).map((c) => [c.id, c]));
+  if (tab?.id !== shownFor) return;
+  if (a.url && tab?.url && String(a.url).split("#")[0] !== String(tab.url).split("#")[0]) return;
+  const cats = categoriesFrom(memory);
+  const highlights = Array.isArray(a.highlights) ? a.highlights.filter((h) => h && typeof h === "object") : [];
+  const pareto = Array.isArray(a.pareto) ? a.pareto : [];
   $("deep").hidden = false;
-  $("verdict").textContent = a.verdict;
-  $("pareto").innerHTML = a.pareto.map((p) => `<li>${esc(p)}</li>`).join("") || '<li class="muted">Nothing worth keeping.</li>';
-  const found = new Set(a.found || []);
-  $("hl-count").textContent = a.highlights.length ? `${found.size}/${a.highlights.length} marked on the page` : "none";
-  const used = [...new Set(a.highlights.map((h) => h.category))];
-  $("legend").innerHTML = used.map((id) => `<span class="chip" style="--c:${cats[id]?.color || "#999"}" title="${esc(cats[id]?.desc)}">${esc(cats[id]?.name || id)}</span>`).join("");
-  $("highlights").innerHTML = a.highlights.map((h, i) => `
-    <li data-i="${i}" class="${found.has(i) ? "" : "missing"}" title="${found.has(i) ? "click to scroll to it" : "not found verbatim on the page"}">
-      <q style="--c:${cats[h.category]?.color || "#999"}">${esc(h.quote)}</q>
-      <span class="why">${esc(cats[h.category]?.name || h.category)} — ${esc(h.why)}</span>
-      <span class="acts"><button type="button" data-hv="right" title="right call">✓</button><button type="button" data-hv="wrong" title="not bullshit">✗</button></span>
+  $("verdict").textContent = a.verdict || "";
+  $("pareto").innerHTML = pareto.map((p) => `<li>${esc(p)}</li>`).join("") || '<li class="muted">Nothing worth keeping.</li>';
+  const found = new Set(Array.isArray(a.found) ? a.found : []);
+  $("hl-count").textContent = highlights.length ? `${found.size}/${highlights.length} marked on the page` : "none";
+  const used = [...new Set(highlights.map((h) => String(h.category || "other")))];
+  $("legend").innerHTML = used.map((id) =>
+    `<span class="chip" style="--c:${categoryColor(cats, id)}" title="${esc(cats[id]?.desc)}">${esc(cats[id]?.name || id)}</span>`).join("");
+  $("highlights").innerHTML = highlights.map((h, i) => `
+    <li data-i="${i}" class="${found.has(i) ? "" : "missing"}" tabindex="0" title="${found.has(i) ? "click to scroll to it" : "not found verbatim on the page"}">
+      <q style="--c:${categoryColor(cats, h.category)}">${esc(h.quote)}</q>
+      <span class="why">${esc(cats[h.category]?.name || h.category || "other")} — ${esc(h.why)}</span>
+      <span class="acts"><button type="button" data-hv="right" title="right call" aria-label="Mark highlight as a right call">✓</button><button type="button" data-hv="wrong" title="not bullshit" aria-label="Mark highlight as not bullshit">✗</button></span>
     </li>`).join("") || '<li class="muted">No bullshit found.</li>';
   vote = 0;
   $("fb-up").classList.remove("on");
@@ -323,21 +396,26 @@ async function showDeep(a) {
   $("fb-score").value = "";
   $("fb-note").value = "";
   $("fb-saved").textContent = "";
-  if (tab && fast) send({ type: "showBlocks", tabId: tab.id, url: fast.url }).catch(() => {});
+  if (tab && fast && fast.url) send({ type: "showBlocks", tabId: tab.id, url: fast.url }).catch(() => {});
   marksOn = true;
   paintMarks();
 }
 
 async function sendFeedback(extra = {}) {
   if (!analysis) return;
-  const userScore = $("fb-score").value === "" ? null : Math.max(0, Math.min(100, +$("fb-score").value));
+  let host = "";
+  try { host = new URL(analysis.url).host; } catch {}
+  const rawUserScore = Number($("fb-score").value);
+  const userScore = $("fb-score").value === "" || !Number.isFinite(rawUserScore)
+    ? null
+    : Math.max(0, Math.min(100, rawUserScore));
   const entry = {
-    url: analysis.url, host: new URL(analysis.url).host, title: analysis.title, modelScore: fast?.score ?? analysis.score,
+    url: analysis.url, host, title: analysis.title, modelScore: fast?.score ?? analysis.score,
     vote, userScore, note: $("fb-note").value.trim(), ...extra,
   };
   try {
     const memory = await send({ type: "feedback", entry });
-    $("fb-saved").textContent = `saved ✓ (${memory.feedback.length} feedback items in memory)`;
+    $("fb-saved").textContent = `saved ✓ (${Array.isArray(memory?.feedback) ? memory.feedback.length : 0} feedback items in memory)`;
   } catch (e) {
     $("fb-saved").textContent = e.message;
   }
@@ -403,6 +481,13 @@ $("outline").onclick = async (e) => {
   if (!li || !tab) return;
   send({ type: "focusHeading", tabId: tab.id, id: li.dataset.hid }).catch(() => {});
 };
+$("outline").addEventListener("keydown", (e) => {
+  if (e.key !== "Enter" && e.key !== " ") return;
+  const li = e.target.closest("li[data-hid]");
+  if (!li) return;
+  e.preventDefault();
+  li.click();
+});
 $("btn-log").onclick = async () => {
   try {
     await downloadLog(lastFailure?.reason || "", lastFailure?.error || "");
@@ -469,7 +554,7 @@ async function refreshAds() {
     const st = await send({ type: "adsGet" });
     adsOn = !!st.enabled;
     paintAds(st.jev ? null : { note: "Jev unavailable?" });
-    if (!st.jev && adsOn) $("ads-status").textContent = "on · heuristic only (set the TypeSafe key in ⚙ Options → Jev ad-block)";
+    if (!st.jev && adsOn) $("ads-status").textContent = "on · heuristic only (set the TypeSafe key in ⚙ Options → Jev instant score & ad-block)";
   } catch { paintAds({ note: "bridge unreachable" }); }
 }
 
@@ -559,15 +644,33 @@ $("highlights").onclick = async (e) => {
   const hv = e.target.dataset.hv;
   if (hv) {
     const h = analysis.highlights[i];
-    await send({ type: "feedback", entry: { url: analysis.url, host: new URL(analysis.url).host, title: analysis.title, modelScore: analysis.score, vote: 0, highlight: { ...h, verdict: hv } } });
+    let host = "";
+    try { host = new URL(analysis.url).host; } catch {}
+    await send({ type: "feedback", entry: { url: analysis.url, host, title: analysis.title, modelScore: analysis.score, vote: 0, highlight: { ...h, verdict: hv } } });
     e.target.closest(".acts").innerHTML = hv === "right" ? "✓ noted" : "✗ noted";
     return;
   }
   send({ type: "focus", tabId: tab.id, idx: i }).catch(() => {});
 };
+$("highlights").addEventListener("keydown", (e) => {
+  if (e.key !== "Enter" && e.key !== " ") return;
+  if (e.target.closest("button")) return; // let the ✓/✗ buttons handle their own keys
+  const li = e.target.closest("li[data-i]");
+  if (!li) return;
+  e.preventDefault();
+  li.click();
+});
 
 chrome.tabs.onActivated.addListener(onTabChange);
-chrome.tabs.onUpdated.addListener((_id, info) => { if (info.status === "complete" || info.url) { tab = null; onTabChange(); } });
+chrome.tabs.onUpdated.addListener((id, info) => {
+  // Background tabs finish loading all the time; only the tab shown in the
+  // panel may invalidate/re-score it.
+  if (!tab || id !== tab.id) return;
+  if (info.status === "complete" || info.url) {
+    tab = null;
+    onTabChange();
+  }
+});
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area === "local" && changes.settings) refreshSetup().catch(() => {});
   if (area === "local" && changes.settings && changes.settings.newValue && "enabled" in changes.settings.newValue) {

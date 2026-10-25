@@ -1,6 +1,6 @@
 // Service worker: talks to the AI, injects page functions, keeps settings + memory.
 import { DEFAULT_SETTINGS, chat, extractJson } from "./lib/ai.js";
-import { EMPTY_MEMORY, addFeedback, applyRules, buildMessages, mergeCategories, needsRelearn, normalizeAnalysis, relearnMessages } from "./lib/analysis.js";
+import { addFeedback, applyRules, buildMessages, mergeCategories, needsRelearn, normalizeAnalysis, relearnMessages, sanitizeMemory } from "./lib/analysis.js";
 import { buildAdsPayload, normalizeThresholds } from "./lib/ads.js";
 import { buildPagePayload, generalizeSelector, hashExcerpt, scoreTags, settledEnough, tagLines } from "./lib/pagescore.js";
 import { applyCustomBlocks, clearCustomBlocks, clearBlockScores, clearHighlights, clearPendingScore, collectAdCandidates, collectGroup, countHiddenAds, ensurePickedId, extractPage, focusHeading, focusHighlight, hideAdNodes, highlightQuotes, showAdNodes, showBlockScores, startPicker } from "./lib/page.js";
@@ -23,7 +23,11 @@ async function getSettings() {
 
 async function getMemory() {
   const { memory } = await chrome.storage.local.get("memory");
-  return { ...EMPTY_MEMORY, ...(memory || {}) };
+  try {
+    return sanitizeMemory(memory);
+  } catch {
+    return sanitizeMemory({ rules: [], categories: [], feedback: [] });
+  }
 }
 
 const setMemory = (memory) => chrome.storage.local.set({ memory });
@@ -32,14 +36,26 @@ const setMemory = (memory) => chrome.storage.local.set({ memory });
    (capped). Never contains keys — only counts, timings and error messages.
    The side panel's 🧾 button downloads it as bbla-log.json. */
 const LOG_KEY = "bbla-logs";
+function redactLog(value) {
+  if (typeof value === "string") {
+    return value
+      .replace(/Bearer\s+[A-Za-z0-9._~-]+/gi, "Bearer [redacted]")
+      .replace(/\b(?:sk|tsk|pk)[-_A-Za-z0-9]{4,}\b/gi, "[redacted]");
+  }
+  if (Array.isArray(value)) return value.map(redactLog);
+  if (value && typeof value === "object") {
+    return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, redactLog(v)]));
+  }
+  return value;
+}
 async function log(area, msg, data) {
   try {
-    const entry = { t: new Date().toISOString(), area, msg };
-    if (data !== undefined) entry.data = data;
+    const entry = { t: new Date().toISOString(), area, msg: redactLog(msg) };
+    if (data !== undefined) entry.data = redactLog(data);
     const cur = ((await chrome.storage.session.get(LOG_KEY))[LOG_KEY] || []).slice(-299);
     cur.push(entry);
     await chrome.storage.session.set({ [LOG_KEY]: cur });
-    console.log("[bbla]", area, msg, data ?? "");
+    console.log("[bbla]", area, entry.msg, entry.data ?? "");
   } catch {}
 }
 
@@ -56,8 +72,9 @@ async function sharedNewsRules() {
 }
 chrome.storage.onChanged.addListener(async (changes, area) => {
   if (area !== "local" || !changes.memory) return;
-  const rules = changes.memory.newValue?.rules || [];
-  if (JSON.stringify(changes.memory.oldValue?.rules || []) === JSON.stringify(rules)) return;
+  const rules = Array.isArray(changes.memory.newValue?.rules) ? changes.memory.newValue.rules : [];
+  const oldRules = Array.isArray(changes.memory.oldValue?.rules) ? changes.memory.oldValue.rules : [];
+  if (JSON.stringify(oldRules) === JSON.stringify(rules)) return;
   try {
     await fetch((await bridgeBase()) + "/memory/rules", { method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ source: "page", rules }), signal: AbortSignal.timeout(3000) });
@@ -76,7 +93,14 @@ async function run(tabId, func, args = []) {
   }
 }
 
-const cacheKey = (url) => "analysis:" + url.split("#")[0];
+const cacheKey = (url) => "analysis:" + String(url || "").split("#")[0];
+
+/* Async page work can outlive a navigation. Never inject into a tab whose
+   address changed while an AI/bridge request was in flight. */
+async function samePage(tabId, url) {
+  const tab = await chrome.tabs.get(tabId).catch(() => null);
+  return !!tab && String(tab.url || "").split("#")[0] === String(url || "").split("#")[0];
+}
 
 async function analyze(tabId, force) {
   const page = await extractSettled(tabId);
@@ -86,6 +110,9 @@ async function analyze(tabId, force) {
     const cached = (await chrome.storage.session.get(key))[key];
     if (cached) {
       await log("ai", "deep dive served from cache", { chars: cached.chars });
+      if (!(await samePage(tabId, page.url))) {
+        throw new Error("Page changed while analyzing — try again.");
+      }
       cached.found = await run(tabId, highlightQuotes, [cached.highlights, (await getMemory()).categories]);
       return cached;
     }
@@ -102,6 +129,9 @@ async function analyze(tabId, force) {
   const analysis = { ...result, url: page.url, title: page.title, chars: page.text.length, selection: page.selection, ms: Date.now() - started,
     words: page.words || 0, headings: (page.headings || []).slice(0, 40) };
   await chrome.storage.session.set({ [key]: analysis });
+  if (!(await samePage(tabId, page.url))) {
+    throw new Error("Page changed while analyzing — try again.");
+  }
   analysis.found = await run(tabId, highlightQuotes, [analysis.highlights, memory.categories]);
   await log("ai", "deep dive ok", { score: analysis.score, highlights: analysis.highlights.length,
     marked: (analysis.found || []).length, chars: page.text.length, ms: analysis.ms });
@@ -185,7 +215,7 @@ async function pageScore(tabId) {
   const data = await r.json().catch(() => ({}));
   if (r.status === 402) {
     await log("bridge", "/page/score → 402 (no key anywhere)");
-    throw new Error("NO_JEV_KEY"); // side panel falls back to full AI analysis
+    throw new Error("NO_JEV_KEY"); // side panel offers the on-demand AI deep dive
   }
   if (!r.ok) {
     await log("bridge", `/page/score → HTTP ${r.status}`, data?.error?.message || "");
@@ -232,13 +262,16 @@ async function pageStats(tabId) {
    Tooltips carry the Jev tag lines plus any AI highlights matched to the block. */
 async function showBlocks(tabId, url) {
   const base = String(url || "").split("#")[0];
+  if (!base) return 0;
+  if (!(await samePage(tabId, base))) return 0;
   const sess = await chrome.storage.session.get(["pagescore:" + base, "analysis:" + base]);
   const f = sess["pagescore:" + base];
   if (!f?.blockScores?.length) {
-    await run(tabId, clearBlockScores).catch(() => {});
-    return { shown: 0 };
+    if (await samePage(tabId, base)) await run(tabId, clearBlockScores).catch(() => {});
+    return 0;
   }
   const memory = await getMemory();
+  if (!(await samePage(tabId, base))) return 0;
   const names = Object.fromEntries(memory.categories.map((c) => [c.id, c.name]));
   const deep = sess["analysis:" + base];
   const norm = (s) => String(s || "").replace(/\s+/g, " ").trim();
@@ -288,8 +321,16 @@ async function adsSet({ enabled, tabId }) {
   if (tabId == null) return { enabled: settings.adsEnabled };
   if (settings.adsEnabled) return adsRun(tabId);
   const restored = await run(tabId, showAdNodes).catch(() => 0);
-  await run(tabId, clearCustomBlocks).catch(() => {});
-  return { enabled: false, restored };
+  // Manual per-site blocks stay in force when the ad-block toggle is turned
+  // off. Re-apply them because showAdNodes may have restored an element that
+  // was hidden by both mechanisms.
+  let custom = 0;
+  try {
+    const tab = await chrome.tabs.get(tabId);
+    const blocks = (settings.customBlocks || {})[new URL(tab.url).host] || [];
+    if (blocks.length) custom = await run(tabId, applyCustomBlocks, [blocks]).catch(() => 0);
+  } catch {}
+  return { enabled: false, restored, custom };
 }
 
 async function adsRun(tabId) {
@@ -301,6 +342,9 @@ async function adsRun(tabId) {
   let custom = 0;
   const col = await run(tabId, collectAdCandidates);
   if (!col || !Array.isArray(col.candidates)) throw new Error("Could not read ad candidates on this page.");
+  if (!(await samePage(tabId, col.url))) {
+    return { enabled: true, hidden: 0, obvious: 0, jev: false, total: col.candidates.length, note: "page changed while scoring" };
+  }
   try {
     const blocks = (settings.customBlocks || {})[col.host] || [];
     if (blocks.length) custom = await run(tabId, applyCustomBlocks, [blocks]);
@@ -324,9 +368,12 @@ async function adsRun(tabId) {
       signal: AbortSignal.timeout(90000),
     });
     const data = await r.json().catch(() => ({}));
-    if (r.status === 402) note = "heuristic only (no TypeSafe key for Jev — set it in ⚙ Options → Jev ad-block)";
+    if (r.status === 402) note = "heuristic only (no TypeSafe key for Jev — set it in ⚙ Options → Jev instant score & ad-block)";
     else if (!r.ok) note = "heuristic only (bridge: " + (data?.error?.message || r.status) + ")";
     else {
+      if (!(await samePage(tabId, col.url))) {
+        return { enabled: true, hidden, obvious: hidden, jev: false, total: col.candidates.length, note: "page changed while scoring" };
+      }
       jev = true;
       const ids = Object.values(data.decisions || {}).filter((d) => d && d.hide).map((d) => d.id);
       jevHidden = ids.length ? await run(tabId, hideAdNodes, [ids]) : 0;
@@ -334,6 +381,9 @@ async function adsRun(tabId) {
     }
   } catch (e) {
     note = "heuristic only (bridge unreachable)";
+  }
+  if (!(await samePage(tabId, col.url))) {
+    return { enabled: true, hidden, obvious: hidden, jev: false, total: col.candidates.length, note: "page changed while scoring" };
   }
   if (!jev) {
     // fallback: hide promo-text matches without Jev
@@ -495,10 +545,12 @@ async function scoreClear({ host }) {
 /* Re-apply cached marks without any AI call (marks toggle back on). */
 async function restoreMarks(tabId, url) {
   const base = String(url || "").split("#")[0];
+  if (!(await samePage(tabId, base))) return { marked: 0, badges: 0 };
   const sess = await chrome.storage.session.get(["pagescore:" + base, "analysis:" + base]);
   const a = sess["analysis:" + base];
   let marked = [];
   if (a?.highlights?.length) {
+    if (!(await samePage(tabId, base))) return { marked: 0, badges: 0 };
     const memory = await getMemory();
     marked = await run(tabId, highlightQuotes, [a.highlights, memory.categories]).catch(() => []);
   }

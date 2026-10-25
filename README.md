@@ -7,10 +7,11 @@
 
 Reads the page you're on and tells you how much of it is worth your attention:
 
-- **Blabla score 0-100** — instant, via one Jev call (no waiting): how much of the page is
-  actually useful to you, with topic + dimension/flag chips explaining why. The one-line verdict,
-  Pareto summary and bullshit highlighter below are an on-demand **AI summary & highlights**
-  button — you decide when to wait for the slow model.
+- **Blabla score 0-100** — instant, via one Jev call (no waiting; needs a TypeSafe key in
+  ⚙ Options → Jev instant score & ad-block): how much of the page is actually useful to you,
+  with topic + dimension/flag chips explaining why. The one-line verdict, Pareto summary and
+  bullshit highlighter below are an on-demand **AI summary & highlights** button — nothing
+  generative runs until you click it.
 - **Per-section badges** — each headed section gets its own Jev score as a small circle on the
   page; hover shows its tags (plus any AI insights once the deep dive ran for that section).
   ✕ marks is a toggle (hide / re-apply from cache, never re-runs the AI). The **◉ score**
@@ -38,7 +39,7 @@ Reads the page you're on and tells you how much of it is worth your attention:
   (`jev-1.13.0`, TypeSafe)** through the bridge (`POST /ads/score`, `bridge/ads.py`) — the same
   calibrated-probability machinery as the news ranker — and hidden at `is_ad ≥ 0.55`
   (or `≥ 0.35` + disruptive). Without a Jev key it still hides the obvious ones
-  (heuristic only). Configure everything in ⚙ Options → **Jev ad-block**: the TypeSafe key
+  (heuristic only). Configure everything in ⚙ Options → **Jev instant score & ad-block**: the TypeSafe key
   (sent with each scoring request; “Save key to bridge” also stores it in
   `~/.config/bbla/typesafe.key` for `./run` and the news ranker), the Jev model, and the three
   score thresholds (`hideAt`, `hideAtDisrupt` + `disruptAt`) — no re-scoring needed, the hide
@@ -114,10 +115,14 @@ Providers outside the built-in host list ask once for access to their API domain
 
 OpenCode's free models are only served to the OpenCode app itself, so the extension can't call them
 directly — the bridge runs them through your installed `opencode`. Configure the bridge's own
-provider/model in `~/.config/bbla/ai.json` (same format as the other ~/src apps).
+provider/model in `~/.config/bbla/ai.json` (same format as the other ~/src apps). The default
+`cli` provider runs the installed OpenCode agent, which has local tools; page text is untrusted
+input. If that matters for the pages you score, configure a plain API provider (Zen, OpenRouter,
+Anthropic, etc.) instead, or score only pages you trust. The bridge isolates the working directory
+but cannot sandbox an agent that is allowed to read your home directory.
 
 Keys are stored in `chrome.storage.local` of your browser profile only (the TypeSafe key is
-optionally also saved to `~/.config/bbla/typesafe.key` via ⚙ Options → Jev ad-block → Save key
+optionally also saved to `~/.config/bbla/typesafe.key` via ⚙ Options → Jev instant score & ad-block → Save key
 to bridge).
 
 Jev thresholds live in the same options card and travel with every `POST /ads/score` call, so the
@@ -125,16 +130,20 @@ bridge needs no restart or config edit after you move a slider.
 
 ## Privacy
 
-No analytics, no servers of ours: page text goes only to the AI provider you choose. Full policy:
-[PRIVACY.md](PRIVACY.md). Chrome Web Store listing text: [store/listing.md](store/listing.md).
+No analytics, no servers of ours: page text and the feedback you give leave your computer only to
+reach the AI provider you choose, for the action you asked for. The optional local helper stays on
+your computer. Full policy: [PRIVACY.md](PRIVACY.md). Chrome Web Store listing text:
+[store/listing.md](store/listing.md).
 
 ## Tests
 
 ```bash
 node --test tests/*.test.mjs
+python3 -m unittest -v tests/test_bridge_origin.py
 ```
 
-End-to-end was verified with Playwright loading the unpacked extension in Chromium against the bridge.
+CI runs both suites. End-to-end was verified with Playwright loading the unpacked extension in
+Chromium against the bridge.
 
 ## License
 

@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { chat, endpointFor, extractJson } from "../extension/lib/ai.js";
-import { EMPTY_MEMORY, addFeedback, applyRules, buildMessages, mergeCategories, needsRelearn, normalizeAnalysis } from "../extension/lib/analysis.js";
+import { EMPTY_MEMORY, addFeedback, applyRules, buildMessages, mergeCategories, needsRelearn, normalizeAnalysis, relearnMessages, sanitizeMemory } from "../extension/lib/analysis.js";
 
 test("extractJson tolerates fences and chatter", () => {
   assert.deepEqual(extractJson('Sure:\n```json\n{"a":1}\n```'), { a: 1 });
@@ -76,8 +76,7 @@ test("buildMessages adds news rules from the news ranker only when present", () 
   assert.ok(withNews.includes("news ranker") && withNews.includes("skips celebrity gossip"));
 });
 
-test("sanitizeMemory keeps the known shape and rejects junk", async () => {
-  const { sanitizeMemory } = await import("../extension/lib/analysis.js");
+test("sanitizeMemory keeps the known shape and rejects junk", () => {
   assert.throws(() => sanitizeMemory({ rules: "x" }), /not a Blabla Meter memory file/);
   const m = sanitizeMemory({ rules: ["a", 5, "  "], feedback: "nope", learnedAt: "x", evil: 1,
     categories: [{ id: "c", name: "C", color: "red;x", desc: 3 }, null, { name: "no id" }] });
@@ -87,5 +86,50 @@ test("sanitizeMemory keeps the known shape and rejects junk", async () => {
   assert.equal(m.evil, undefined);
   assert.equal(m.categories.length, 1);
   assert.match(m.categories[0].color, /^#[0-9a-f]{6}$/i);
-  assert.ok(sanitizeMemory({ rules: [], categories: [] }).categories.length > 5, "falls back to seed categories");
+  const seeded = sanitizeMemory({ rules: [], categories: [] });
+  assert.ok(seeded.categories.length > 5, "falls back to seed categories");
+  seeded.categories[0].name = "mutated";
+  assert.notEqual(EMPTY_MEMORY.categories[0].name, "mutated", "seed categories are cloned");
+});
+
+test("sanitizeMemory cleans feedback fields used by the options page", () => {
+  const m = sanitizeMemory({ rules: [], categories: [], feedback: [
+    { title: "<img src=x onerror=alert(1)>", host: "<b>h</b>", url: "https://x", modelScore: "<img>",
+      userScore: 150, vote: 9, note: "<script>", at: "now",
+      highlight: { quote: 42, verdict: "right", category: "clickbait", why: "x" } },
+    { title: "ok", modelScore: 72, userScore: 40, vote: -1, note: "too generous",
+      highlight: { quote: "A long enough quote", verdict: "wrong", category: "filler", why: "fluff" } },
+    null, "nope",
+  ] });
+  assert.equal(m.feedback.length, 2);
+  const [dirty, clean] = m.feedback;
+  assert.equal(dirty.modelScore, null);
+  assert.equal(dirty.userScore, 100);
+  assert.equal(dirty.vote, 0);
+  assert.equal(dirty.highlight, undefined, "a highlight without a valid quote is dropped");
+  assert.equal(clean.modelScore, 72);
+  assert.equal(clean.vote, -1);
+  assert.equal(clean.highlight.quote, "A long enough quote");
+});
+
+test("prompt builders tolerate malformed memory and mark page text untrusted", () => {
+  const page = { title: 42, url: { x: 1 }, text: 123 };
+  const memory = { rules: [], categories: EMPTY_MEMORY.categories, feedback: [
+    { title: 42, modelScore: { x: 1 }, userScore: "nope", vote: 99, note: { x: 1 }, highlight: "bad" },
+    null,
+  ] };
+  const [sys, user] = buildMessages(page, memory);
+  assert.match(sys.content, /untrusted/);
+  assert.match(user.content, /untrusted/);
+  assert.doesNotThrow(() => buildMessages(page));
+  assert.doesNotThrow(() => buildMessages(page, { categories: "not-an-array", feedback: "nope" }));
+
+  const [rsys, ruser] = relearnMessages({ feedback: [
+    { title: 42, host: {}, modelScore: {}, userScore: "x", note: {}, highlight: { quote: 42 } },
+    null, "nope",
+  ], rules: [] });
+  assert.match(rsys.content, /untrusted/);
+  assert.match(ruser.content, /Current rules/);
+  assert.doesNotThrow(() => relearnMessages({ feedback: [null, { highlight: { quote: 42 } }], rules: [] }));
+  assert.doesNotThrow(() => normalizeAnalysis({ blabla_score: 10 }, { categories: "not-an-array" }));
 });
