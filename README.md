@@ -106,7 +106,7 @@ Brave is Chromium under the hood, so the MV3 extension loads as-is — no build 
 | Mistral | a Mistral key — free tier (default `mistral-small-latest`) |
 | DeepSeek | a DeepSeek key (default `deepseek-chat`) |
 | **Ollama** — free, local | Ollama running with a pulled model; type its name in Model. A 403 means start Ollama with `OLLAMA_ORIGINS=chrome-extension://*` |
-| **Local bridge** — free | the `opencode` CLI installed; run `python3 bridge/bridge.py` (port 8804) |
+| **Local bridge** — free | the `opencode` CLI installed; run `python3 bridge/bridge.py` (port 8804). Only the Chrome Web Store extension ID is accepted; for an unpacked build, start it with `BBLA_EXTENSION_IDS=<your-extension-id>` |
 | Custom | any OpenAI-compatible endpoint (LM Studio, vLLM, LiteLLM…) |
 
 Each provider keeps its own key, so switching providers never sends one vendor's key to another.

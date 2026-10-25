@@ -13,3 +13,12 @@ jobs:
         with:
           node-version: 22
       - run: node --test tests/*.test.mjs
+
+  python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - run: python3 -m unittest tests/test_bridge_origin.py

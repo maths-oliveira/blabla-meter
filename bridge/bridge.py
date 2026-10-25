@@ -5,7 +5,8 @@ which OpenCode only allows from inside OpenCode (so the extension can't call the
 
   python3 bridge.py [--port 8804]
 
-Only browser extensions (chrome-extension:// origins) and local tools may call it.
+Only the published extension, explicitly allowed development extension IDs, and local tools
+may call it.
 
 Also serves the time-usage report (usage/, ex ~/src/cchrome):
   GET  /usage                 the dashboard page (usage/dashboard.html)
@@ -25,6 +26,7 @@ import ipaddress
 import subprocess
 import sys
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from urllib.parse import urlsplit
 
 from ai import AI, AIError, _write_private
 
@@ -59,9 +61,35 @@ def local_host(host_header: str) -> bool:
         return False
 
 
+# Chrome Web Store build. Development/unpacked builds have a different ID; add those to
+# BBLA_EXTENSION_IDS (comma-separated) when running the bridge locally.
+STORE_EXTENSION_IDS = frozenset({"emjbfdcigbfojhdipapdjaanlkhcjoai"})
+
+
+def extension_ids() -> set:
+    raw = os.environ.get("BBLA_EXTENSION_IDS", "")
+    return set(STORE_EXTENSION_IDS) | {part.strip().lower() for part in raw.split(",") if part.strip()}
+
+
 def allowed(origin: str) -> bool:
-    # no Origin = curl/local script; extensions send chrome-extension://<id>; web pages are refused
-    return not origin or origin.startswith(("chrome-extension://", "moz-extension://"))
+    """Allow local tools (no Origin) and only known extension IDs.
+
+    Web pages are refused, and a different installed extension cannot use this
+    machine's AI credentials or read/change Blabla Meter's local memory.
+    """
+    origin = (origin or "").strip()
+    if not origin:
+        return True
+    try:
+        u = urlsplit(origin)
+    except ValueError:
+        return False
+    if u.scheme not in ("chrome-extension", "moz-extension"):
+        return False
+    # An Origin is exactly scheme://id — reject paths, credentials, queries and fragments.
+    if u.path not in ("", "/") or u.query or u.fragment or u.username or u.password:
+        return False
+    return (u.netloc or "").lower() in extension_ids()
 
 
 def to_prompt(messages: list) -> tuple:
@@ -105,6 +133,8 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         if self._bad_host():
             return None
+        if not allowed(self.headers.get("Origin", "")):
+            return self._send(403, {"error": {"message": "origin not allowed"}})
         path, _, query = self.path.partition("?")
         if path.rstrip("/") == "/usage":
             # a normal page view (no Origin header): only this machine can reach 127.0.0.1
@@ -118,12 +148,8 @@ class Handler(BaseHTTPRequestHandler):
             self.end_headers()
             return self.wfile.write(html)
         if path == "/memory/rules":
-            if not allowed(self.headers.get("Origin", "")):
-                return self._send(403, {"error": {"message": "origin not allowed"}})
             return self._send(200, shared_rules.read())
         if path == "/usage/site":
-            if not allowed(self.headers.get("Origin", "")):
-                return self._send(403, {"error": {"message": "origin not allowed"}})
             from urllib.parse import parse_qs
             url = (parse_qs(query).get("url") or [""])[0]
             return self._send(200, site_stats.stats_for_url(url))
@@ -131,8 +157,6 @@ class Handler(BaseHTTPRequestHandler):
             cfg = ai.load_config()
             return self._send(200, {"ok": True, "provider": cfg["provider"], "model": cfg["model"]})
         if path == "/ads/status":
-            if not allowed(self.headers.get("Origin", "")):
-                return self._send(403, {"error": {"message": "origin not allowed"}})
             header_key = (self.headers.get("X-Typesafe-Key") or "").strip()
             key = header_key or (ads_scorer.typesafe_key() if ads_scorer else "")
             return self._send(200, {"ok": True, "jev_available": bool(key),

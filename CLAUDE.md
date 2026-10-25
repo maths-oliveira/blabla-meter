@@ -46,7 +46,8 @@ Read `README.md`. Origin: `outline.txt` (keep it).
     cheap `pageStats` check shows the body changed under a cached score.
 - `bridge/bridge.py` + `bridge/ai.py` — local OpenAI-style endpoint (port 8804) that runs the provider
   from `ai.py` (default: installed `opencode` CLI, free models). Refuses web-page origins; allows
-  `chrome-extension://` and no-origin. `ai.py` is shared verbatim with rrecipes/usefulnews/wwhats.
+  no-origin local tools and only the store extension ID (`emjbfdcigbfojhdipapdjaanlkhcjoai`) plus
+  IDs in `BBLA_EXTENSION_IDS` for unpacked builds. `ai.py` is shared verbatim with rrecipes/usefulnews/wwhats.
   `POST /ads/score` takes the key from `X-Typesafe-Key` (or `typesafeKey`) then file/env, plus
   per-request `thresholds` + `model`; `POST /page/score` (bridge/pages.py, same key lookup) scores
   the page on news-style dimensions for the instant score; `POST /ads/key` persists the key (0600).
