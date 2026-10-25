@@ -2,6 +2,10 @@
 
 Copy-paste source for the developer dashboard. Keep in sync with `extension/manifest.json` and `PRIVACY.md`.
 
+> The live listing (23 Oct 2026) still shows a shortened **BRING YOUR OWN AI** paragraph
+> ("Claude, OpenAI, Gemini, etc"). Paste the full text below on the next dashboard update —
+> the free tiers and the local option are the strongest selling points.
+
 ## Store listing tab
 
 **Name** (from the manifest): Blabla Meter
@@ -12,6 +16,10 @@ How much of this page is useful? Blabla score, summary and bullshit highlighter 
 **Category:** Productivity → Tools
 
 **Language:** English
+
+**Homepage:** https://github.com/maths-oliveira/blabla-meter
+
+**Support:** https://github.com/maths-oliveira/blabla-meter/issues
 
 **Description:**
 
@@ -88,3 +96,6 @@ Visibility: Public. Regions: all.
 ## Upload
 
 `./extension/build_zip.sh --out .` → `blabla-meter-<version>.zip`. Bump `version` in `extension/manifest.json` before each new upload.
+
+For 0.9.2, also re-upload `store/screenshots/3-choose-your-ai.png` (the old capture says
+"Anthroic" instead of "Anthropic") and add the Support/Homepage URLs above in the dashboard.

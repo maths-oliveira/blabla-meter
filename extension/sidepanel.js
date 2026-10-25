@@ -1,12 +1,15 @@
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
-import { DEFAULT_SETTINGS } from "./lib/ai.js";
+import { DEFAULT_SETTINGS, PROVIDERS, keyFor } from "./lib/ai.js";
 
 let tab = null;
 let fast = null;      // instant Jev score (no generative AI)
 let analysis = null;  // on-demand LLM deep dive (verdict, pareto, highlights)
 let vote = 0;
+let bridgeUp = null;        // null until checked; false = local helper not running
+let hasProvider = true;     // can the configured AI provider answer right now?
+let primaryAction = "fast"; // fast | deep | setup
 
 function send(msg) {
   return new Promise((resolve, reject) => {
@@ -28,6 +31,65 @@ async function currentTab() {
   return t;
 }
 
+async function bridgeBase() {
+  const { settings } = await chrome.storage.local.get("settings");
+  return (((settings || {}).bridgeUrl) || DEFAULT_SETTINGS.bridgeUrl).replace(/\/+$/, "");
+}
+
+/* The instant score/badges need the optional local helper; the news reader is
+   another local app. Check both so the panel doesn't offer dead actions. */
+async function checkBridge() {
+  try {
+    const r = await fetch((await bridgeBase()) + "/health", { signal: AbortSignal.timeout(1500) });
+    bridgeUp = r.ok;
+  } catch {
+    bridgeUp = false;
+  }
+  try {
+    // no-cors: the news app has no CORS headers; resolving at all means it is up.
+    await fetch("http://127.0.0.1:8805/", { mode: "no-cors", signal: AbortSignal.timeout(1200) });
+    $("news-link").hidden = false;
+  } catch {
+    $("news-link").hidden = true;
+  }
+  return bridgeUp;
+}
+
+async function providerReady() {
+  const { settings } = await chrome.storage.local.get("settings");
+  const s = { ...DEFAULT_SETTINGS, ...(settings || {}) };
+  const p = PROVIDERS[s.provider] || PROVIDERS.zen;
+  if (s.provider === "bridge") return bridgeUp === true;
+  if (s.provider === "ollama") return !!s.model;
+  if (s.provider === "custom") return !!s.baseUrl;
+  return !p.needsKey || !!keyFor(s);
+}
+
+function setPrimary(action, label, title = "") {
+  primaryAction = action;
+  $("btn-analyze").textContent = label;
+  $("btn-analyze").title = title;
+}
+
+async function refreshSetup() {
+  hasProvider = await providerReady();
+  const bridgeDown = bridgeUp === false;
+  const show = !hasProvider || bridgeDown;
+  $("setup").hidden = !show;
+  if (show) {
+    $("setup-msg").textContent = !hasProvider
+      ? "Pick an AI provider in Options, paste your key, and come back. Gemini, Groq, Mistral and OpenRouter have free tiers; Ollama runs locally."
+      : "The instant score and section badges need the optional local helper. AI summary & highlights works with your configured provider.";
+    $("setup-open").textContent = "⚙ Options";
+    $("setup-key").hidden = hasProvider;
+  }
+  if (!hasProvider) setPrimary("setup", "Set up your AI", "Choose an AI provider in Options");
+  else if (bridgeDown) setPrimary("deep", "AI summary & highlights", "The instant score needs the local helper; this runs the AI deep dive.");
+  else setPrimary("fast", "Score this page", "");
+  // Don't show a second, identical deep-dive button when the primary is already it.
+  if (primaryAction !== "fast") $("btn-deep").hidden = true;
+}
+
 async function onTabChange() {
   const t = await currentTab();
   if (!t || (tab && t.id === tab.id && t.url === tab.url)) return;
@@ -41,6 +103,7 @@ async function onTabChange() {
     return;
   }
   showUsage(t.url);
+  await refreshSetup();
   $("result").hidden = true;
   $("deep").hidden = true;
   $("btn-deep").hidden = true;
@@ -64,15 +127,17 @@ async function onTabChange() {
     }
     // Same URL but a different body (hydration, SPA navigation, live feed):
     // re-score instead of showing a stale number.
-    try {
-      const st = await send({ type: "pageStats", tabId: t.id });
-      const old = fast.chars || 0;
-      if (old > 0 && Math.abs(st.chars - old) / old > 0.35) {
-        status("Page content changed — updating score…");
-        await scoreFast();
-      }
-    } catch {}
-  } else {
+    if (hasProvider && bridgeUp !== false) {
+      try {
+        const st = await send({ type: "pageStats", tabId: t.id });
+        const old = fast.chars || 0;
+        if (old > 0 && Math.abs(st.chars - old) / old > 0.35) {
+          status("Page content changed — updating score…");
+          await scoreFast();
+        }
+      } catch {}
+    }
+  } else if (hasProvider && bridgeUp !== false) {
     scoreFast();
   }
   // re-apply ad-blocking on the new page while the toggle stays ON
@@ -93,8 +158,7 @@ async function showUsage(url) {
   const box = $("usage");
   box.hidden = true;
   if (!/^https?:/.test(url || "")) return;
-  const { settings } = await chrome.storage.local.get("settings");
-  const base = ((settings && settings.bridgeUrl) || DEFAULT_SETTINGS.bridgeUrl).replace(/\/+$/, "");
+  const base = await bridgeBase();
   let u;
   try {
     const r = await fetch(`${base}/usage/site?url=${encodeURIComponent(url)}`, { signal: AbortSignal.timeout(2500) });
@@ -137,13 +201,16 @@ async function scoreFast() {
   } catch (e) {
     if (e.message === "NO_JEV_KEY") {
       // No TypeSafe key: fall back to the full AI analysis (old behavior).
-      status("No Jev key — running the full AI analysis instead (set a TypeSafe key in ⚙ Options → Jev ad-block for the instant score).");
+      status("The instant score needs a TypeSafe/Jev key — running the full AI analysis instead (⚙ Options → Jev ad-block).");
       await analyze(true);
       status("");
     } else if (e.message === "NO_BRIDGE") {
       // Store installs usually run without the local bridge: not an error.
-      status("The instant score needs the local helper (see the README). Use “AI summary & highlights” for the full analysis.");
-      $("btn-deep").hidden = false;
+      bridgeUp = false;
+      await refreshSetup();
+      status(hasProvider
+        ? "The instant score needs the optional local helper. Use “AI summary & highlights”."
+        : "The instant score needs the optional local helper. Set up a provider in ⚙ Options.");
     } else {
       status(e.message + await autoLog("score-failed", e), true);
       $("btn-deep").hidden = false; // the deep dive may still work via a cloud provider
@@ -224,7 +291,7 @@ async function showScore(f) {
   $("outline-box").open = false;
   $("outline").innerHTML = heads.map((h) =>
     `<li data-hid="${esc(h.id)}" style="margin-left:${(h.level - 1) * 10}px">${esc(h.text)}</li>`).join("");
-  $("btn-deep").hidden = false;
+  $("btn-deep").hidden = primaryAction !== "fast";
   $("deep-status").textContent = "";
   let badges = 0;
   if (tab) badges = await send({ type: "showBlocks", tabId: tab.id, url: f.url }).catch(() => 0);
@@ -276,7 +343,11 @@ async function sendFeedback(extra = {}) {
   }
 }
 
-$("btn-analyze").onclick = () => scoreFast();
+$("btn-analyze").onclick = () => {
+  if (primaryAction === "deep") return deepDive();
+  if (primaryAction === "setup") return chrome.tabs.create({ url: chrome.runtime.getURL("options.html") });
+  return scoreFast();
+};
 $("btn-deep").onclick = () => deepDive();
 $("btn-clear").onclick = async () => {
   if (!extOn) return; // power button already cleared the page when switching off
@@ -498,6 +569,7 @@ $("highlights").onclick = async (e) => {
 chrome.tabs.onActivated.addListener(onTabChange);
 chrome.tabs.onUpdated.addListener((_id, info) => { if (info.status === "complete" || info.url) { tab = null; onTabChange(); } });
 chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === "local" && changes.settings) refreshSetup().catch(() => {});
   if (area === "local" && changes.settings && changes.settings.newValue && "enabled" in changes.settings.newValue) {
     extOn = changes.settings.newValue.enabled !== false;
     paintPower();
@@ -509,5 +581,11 @@ chrome.storage.onChanged.addListener((changes, area) => {
     }
   }
 });
-refreshPower().then(() => { onTabChange(); refreshAds(); });
+(async () => {
+  await refreshPower();
+  await checkBridge();
+  await refreshSetup();
+  await onTabChange();
+  refreshAds();
+})().catch((e) => status(e.message, true));
 paintMarks();

@@ -2,7 +2,8 @@
 
 *Internal name (code, config dirs, storage): `bbla`.*
 
-[![Buy me a coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-%E2%98%95-FFDD00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/maths-oliveira)
+[![Chrome Web Store](https://img.shields.io/badge/Chrome%20Web%20Store-Install-4285F4?logo=googlechrome&logoColor=white)](https://chromewebstore.google.com/detail/blabla-meter/emjbfdcigbfojhdipapdjaanlkhcjoai)
+[![Buy me a coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-%E2%98%95-FFDD00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/maths.oliveira)
 
 Reads the page you're on and tells you how much of it is worth your attention:
 
@@ -76,14 +77,20 @@ python3 usage/build_report.py --collect  # also pull a fresh usagestats snapshot
 Categories, regex rules and scores: `usage/categories.json`. Private data stays local and git-ignored
 (`usage/brave_history.db`, `usage/data/`, `usage/dashboard.html`).
 
-## Install (Brave)
+## Install
+
+### Chrome Web Store (recommended)
+
+[Install Blabla Meter](https://chromewebstore.google.com/detail/blabla-meter/emjbfdcigbfojhdipapdjaanlkhcjoai) — works in Chrome, Brave, Edge and other Chromium browsers. No build step, no helper needed for the AI summary; the optional local helper adds the instant score, section badges and ad-block.
+
+### From source (development)
 
 Brave is Chromium under the hood, so the MV3 extension loads as-is — no build step.
 
 1. `brave://extensions` → enable **Developer mode** (top right).
 2. Either **Load unpacked** → pick `bbla/extension/`, or drag-and-drop the packaged zip:
    `./extension/build_zip.sh` → `blabla-meter-<version>.zip`.
-3. Click the Blabla Meter icon (or **Alt+B**) on any page → the side panel opens → **Analyze this page**.
+3. Click the Blabla Meter icon (or **Alt+B**) on any page → the side panel opens → **Score this page**.
    Optional: pin the icon via the 🧩 puzzle piece → 📌.
 4. ⚙ Options → choose the AI provider:
 
@@ -129,7 +136,12 @@ node --test tests/*.test.mjs
 
 End-to-end was verified with Playwright loading the unpacked extension in Chromium against the bridge.
 
+## License
+
+MIT — see [LICENSE](LICENSE). Copy it, fork it, ship it.
+
 ## Support
 
-If Blabla Meter saves you time, you can [buy me a coffee ☕](https://buymeacoffee.com/maths-oliveira) — also linked
-from the side panel header (☕) and the bottom of ⚙ Options.
+If Blabla Meter saves you time, you can [buy me a coffee ☕](https://buymeacoffee.com/maths.oliveira) — also linked
+from the side panel header (☕) and the bottom of ⚙ Options. If the coffee page is unavailable, email
+[so.matheus@proton.me](mailto:so.matheus@proton.me) or [open an issue](https://github.com/maths-oliveira/blabla-meter/issues).

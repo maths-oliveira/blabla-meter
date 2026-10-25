@@ -31,6 +31,9 @@ function send(msg) {
 }
 
 async function load() {
+  // Developer tools (reload button) are for editing the extension from disk,
+  // not for store users: open options.html?dev=1 to see that card.
+  $("dev-card").hidden = !new URLSearchParams(location.search).has("dev");
   const data = await chrome.storage.local.get(["settings", "memory"]);
   settings = { ...DEFAULT_SETTINGS, ...(data.settings || {}) };
   if (settings.enabled === undefined) settings.enabled = true;

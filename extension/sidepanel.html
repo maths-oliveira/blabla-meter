@@ -11,13 +11,23 @@
   <strong>Blabla Meter</strong>
   <button id="btn-power" type="button" title="Turn the whole extension on/off (no scoring, badges or ad-blocking while off)">⏻ on</button>
   <span id="page-title" class="muted small ellipsis"></span>
-  <a href="http://127.0.0.1:8805/" target="_blank" class="icon-btn" title="Useful news: ranked with the same preferences (news/, start with bbla/run)">📰</a>
+  <a id="news-link" href="http://127.0.0.1:8805/" target="_blank" class="icon-btn" title="Useful news: ranked with the same preferences (news/, start with bbla/run)" hidden>📰</a>
   <a href="options.html" target="_blank" class="icon-btn" title="Options & memory">⚙</a>
-  <a href="https://buymeacoffee.com/maths-oliveira" target="_blank" rel="noopener" class="icon-btn" title="Like Blabla Meter? Buy me a coffee">☕</a>
+  <a href="https://buymeacoffee.com/maths.oliveira" target="_blank" rel="noopener" class="icon-btn" title="Like Blabla Meter? Buy me a coffee">☕</a>
 </header>
 
 <main>
   <section id="usage" class="usage" hidden></section>
+
+  <section id="setup" class="card" hidden>
+    <h3>Set up your AI</h3>
+    <p id="setup-msg" class="muted small"></p>
+    <div class="row">
+      <a id="setup-open" class="btn" href="options.html" target="_blank">⚙ Options</a>
+      <a id="setup-key" class="btn" href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">Free Gemini key ↗</a>
+    </div>
+  </section>
+
   <div class="row">
     <button id="btn-analyze" class="primary grow" type="button">Score this page</button>
     <button id="btn-clear" type="button" title="Remove highlight marks and section score badges from the page (scores and memory are kept)">✕ marks</button>

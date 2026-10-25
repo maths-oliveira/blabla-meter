@@ -6,9 +6,17 @@
 # Usage: ./build_zip.sh [--out DIR]
 # Output: blabla-meter-<version>.zip
 set -eu
+# Resolve the output before cd, so `--out .` means the caller's directory
+# (the repo root when run as ./extension/build_zip.sh) rather than extension/.
+CALLER="$(pwd)"
 cd "$(dirname "$(readlink -f "$0")")" || exit 1
-OUT="."
-if [ "${1:-}" = "--out" ] && [ $# -ge 2 ]; then OUT="$2"; fi
+OUT="$CALLER"
+if [ "${1:-}" = "--out" ] && [ $# -ge 2 ]; then
+  case "$2" in
+    /*) OUT="$2" ;;
+    *) OUT="$CALLER/$2" ;;
+  esac
+fi
 mkdir -p "$OUT"
 python3 - "$OUT" <<'EOF'
 import json, sys, zipfile

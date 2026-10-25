@@ -7,7 +7,7 @@
 <link rel="stylesheet" href="ui.css">
 </head>
 <body>
-<header class="top"><strong>Blabla Meter</strong><span id="ext-version" class="muted small"></span><span class="muted small">options & memory</span></header>
+<header class="top"><strong>Blabla Meter</strong><span id="ext-version" class="muted small"></span><span class="muted small" style="margin-left:auto">options & memory</span></header>
 <main>
   <section class="card">
     <h3>Extension</h3>
@@ -18,6 +18,12 @@
   </section>
   <section class="card">
     <h3>AI provider</h3>
+    <p class="muted small">Pick a provider, paste your key and press Save. Free tiers:
+      <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">Gemini</a>,
+      <a href="https://console.groq.com/keys" target="_blank" rel="noopener">Groq</a>,
+      <a href="https://console.mistral.ai/api-keys/" target="_blank" rel="noopener">Mistral</a>,
+      <a href="https://openrouter.ai/keys" target="_blank" rel="noopener">OpenRouter</a>;
+      fully local: <a href="https://ollama.com" target="_blank" rel="noopener">Ollama</a>.</p>
     <label>Provider <select id="provider"></select></label>
     <label>Model <input id="model" placeholder="default"></label>
     <label id="key-wrap">API key <input id="key" type="password" autocomplete="off"></label>
@@ -105,7 +111,7 @@
     <ol id="feedback" class="small"></ol>
   </section>
 
-  <section class="card">
+  <section class="card" id="dev-card" hidden>
     <h3>Developer</h3>
     <div class="row">
       <button id="reload-ext" type="button" title="Reload the extension code from disk — same as the ↻ button on brave://extensions">↻ Reload extension</button>
@@ -116,10 +122,18 @@
   <section class="card">
     <h3>Support Blabla Meter</h3>
     <div class="row">
-      <a class="btn primary" href="https://buymeacoffee.com/maths-oliveira" target="_blank" rel="noopener">☕ Buy me a coffee</a>
-      <span class="muted small">Blabla Meter is free and runs locally. If it saves you time, a coffee keeps it going.</span>
+      <a class="btn primary" href="https://buymeacoffee.com/maths.oliveira" target="_blank" rel="noopener">☕ Buy me a coffee</a>
+      <span class="muted small">Blabla Meter is free and runs locally. If it saves you time, a coffee keeps it going.
+      If the coffee page is unavailable, email <a href="mailto:so.matheus@proton.me">so.matheus@proton.me</a>.</span>
     </div>
   </section>
+
+  <footer class="muted small" style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin:22px 0 8px">
+    <a href="https://github.com/maths-oliveira/blabla-meter/blob/main/PRIVACY.md" target="_blank" rel="noopener">Privacy</a>
+    <a href="https://github.com/maths-oliveira/blabla-meter/issues" target="_blank" rel="noopener">Report an issue</a>
+    <a href="mailto:so.matheus@proton.me">Email</a>
+    <span>MIT licensed</span>
+  </footer>
 </main>
 <script type="module" src="options.js"></script>
 </body>
