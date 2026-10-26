@@ -4,8 +4,9 @@ Copy-paste source for the developer dashboard. Keep in sync with `extension/mani
 
 > The rejected submission was flagged for keyword spam because its description listed many AI
 > providers by name. This copy keeps the same features but removes provider/model name lists.
-> 0.9.3 is pending review (submitted Oct 24, 2026). This file is now the **0.9.4 draft**; it has
-> not been submitted and must not overwrite the pending 0.9.3 package.
+> 0.9.3 review was canceled on 25 October 2026 so its package would not be overwritten. **0.9.4**
+> was submitted for review the same day; publishing is deferred, and the live store remains 0.9.1
+> until it passes review and is published manually.
 
 ## Store listing tab
 
