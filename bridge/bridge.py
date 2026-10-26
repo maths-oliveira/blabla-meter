@@ -1,21 +1,22 @@
 #!/usr/bin/env python3
 """Local bridge: an OpenAI-style /v1/chat/completions endpoint on 127.0.0.1 that answers with the
-provider configured in ``ai.py`` — by default the installed ``opencode`` CLI and its free models,
-which OpenCode only allows from inside OpenCode (so the extension can't call them directly).
+provider configured in ``ai.py``. The default is OpenCode Zen (an API key is required); the
+installed ``opencode`` CLI agent is opt-in with ``BBLA_ALLOW_CLI=1`` because it has local tools.
 
   python3 bridge.py [--port 8804]
 
-Only the published extension, explicitly allowed development extension IDs, and local tools
-may call it.
+Sensitive browser requests require an allowed extension Origin. A request with no Origin and no
+Sec-Fetch-* headers is treated as a local tool (trusted); a browser request without an Origin is
+rejected. Data GET routes are removed: /health, /ads/status, and a top-level /usage navigation
+are the only no-Origin reads.
 
 Also serves the time-usage report (usage/, ex ~/src/cchrome):
-  GET  /usage                 the dashboard page (usage/dashboard.html)
-  GET  /usage/site?url=…      time on that site + its category/usefulness (usage/site_stats.py)
+  GET  /usage                 the dashboard page (top-level navigation only)
+  POST /usage/site            {"url": "..."} → time on that site + category/usefulness
   POST /usage/rebuild         re-run usage/build_report.py (desktop history; phone uses saved snapshots)
 
 and the preference rules shared with the news ranker (news/, ex ~/src/usefulnews), see shared_rules.py:
-  GET  /memory/rules          {"page": [...], "news": [...], "updated": {...}}
-  POST /memory/rules          {"source": "page"|"news", "rules": [...]}
+  POST /memory/rules          {"op":"read"} → rules, or {"source":"page"|"news","rules":[...]} to write
 """
 
 import argparse
@@ -72,10 +73,12 @@ def extension_ids() -> set:
 
 
 def allowed(origin: str) -> bool:
-    """Allow local tools (no Origin) and only known extension IDs.
+    """Origin allowlist: known extension IDs only, plus an empty Origin.
 
-    Web pages are refused, and a different installed extension cannot use this
-    machine's AI credentials or read/change Blabla Meter's local memory.
+    Empty Origin is accepted here for /health, /ads/status, a top-level
+    /usage navigation, and local tools. Browser POSTs always carry Origin;
+    a browser request that somehow has no Origin but does have Sec-Fetch-*
+    headers is rejected in do_POST. Data GET routes are removed.
     """
     origin = (origin or "").strip()
     if not origin:
@@ -135,9 +138,15 @@ class Handler(BaseHTTPRequestHandler):
             return None
         if not allowed(self.headers.get("Origin", "")):
             return self._send(403, {"error": {"message": "origin not allowed"}})
-        path, _, query = self.path.partition("?")
+        path, _, _ = self.path.partition("?")
         if path.rstrip("/") == "/usage":
-            # a normal page view (no Origin header): only this machine can reach 127.0.0.1
+            # The report is a page, not an API. Allow a real top-level
+            # navigation and local tools (no Sec-Fetch-*), but not another
+            # extension's CORS GET (Sec-Fetch-Mode: cors, no Origin).
+            mode = self.headers.get("Sec-Fetch-Mode", "")
+            site = self.headers.get("Sec-Fetch-Site", "")
+            if mode != "navigate" and (mode or site):
+                return self._send(403, {"error": {"message": "open /usage in a browser tab"}})
             try:
                 html = (USAGE / "dashboard.html").read_bytes()
             except FileNotFoundError:
@@ -147,12 +156,10 @@ class Handler(BaseHTTPRequestHandler):
             self.send_header("Content-Length", str(len(html)))
             self.end_headers()
             return self.wfile.write(html)
-        if path == "/memory/rules":
-            return self._send(200, shared_rules.read())
-        if path == "/usage/site":
-            from urllib.parse import parse_qs
-            url = (parse_qs(query).get("url") or [""])[0]
-            return self._send(200, site_stats.stats_for_url(url))
+        if path in ("/memory/rules", "/usage/site"):
+            # These used to be readable without an Origin. Use POST instead;
+            # POSTs are checked for an allowed extension Origin.
+            return self._send(403, {"error": {"message": "use POST with an extension Origin"}})
         if self.path.rstrip("/") in ("", "/health"):
             cfg = ai.load_config()
             return self._send(200, {"ok": True, "provider": cfg["provider"], "model": cfg["model"]})
@@ -166,13 +173,30 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         if self._bad_host():
             return None
-        if not allowed(self.headers.get("Origin", "")):
+        origin = (self.headers.get("Origin") or "").strip()
+        if origin:
+            if not allowed(origin):
+                return self._send(403, {"error": {"message": "origin not allowed"}})
+        elif self.headers.get("Sec-Fetch-Site") or self.headers.get("Sec-Fetch-Mode"):
+            # Modern Chromium sends Origin on extension/web POSTs. A POST with
+            # no Origin but browser Fetch metadata is not a local tool; don't
+            # let a page CSRF the bridge.
             return self._send(403, {"error": {"message": "origin not allowed"}})
+        # No Origin and no Sec-Fetch-*: a trusted local tool (curl, tests).
         if self.path.rstrip("/") == "/memory/rules":
             try:
                 length = int(self.headers.get("Content-Length") or 0)
                 body = json.loads(self.rfile.read(min(length, 200_000)) or b"{}")
+                if body.get("op") == "read":
+                    return self._send(200, shared_rules.read())
                 return self._send(200, shared_rules.write(str(body.get("source", "")), body.get("rules")))
+            except (ValueError, AttributeError) as exc:
+                return self._send(400, {"error": {"message": str(exc)}})
+        if self.path.rstrip("/") == "/usage/site":
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+                body = json.loads(self.rfile.read(min(length, 10_000)) or b"{}")
+                return self._send(200, site_stats.stats_for_url(str(body.get("url") or "")))
             except (ValueError, AttributeError) as exc:
                 return self._send(400, {"error": {"message": str(exc)}})
         if self.path.rstrip("/") == "/usage/rebuild":
@@ -272,6 +296,9 @@ def main():
     args = ap.parse_args()
     cfg = ai.load_config()
     print(f"bbla bridge on http://127.0.0.1:{args.port}  (provider {cfg['provider']}, model {cfg['model']})")
+    if cfg["provider"] != "cli" and not ai.api_key(cfg["provider"])[0]:
+        print("No API key for this provider yet. Add one in the extension options, set the "
+              "provider's env key, or opt into the installed agent with BBLA_ALLOW_CLI=1.")
     ThreadingHTTPServer(("127.0.0.1", args.port), Handler).serve_forever()
 
 

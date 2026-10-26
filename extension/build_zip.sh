@@ -19,21 +19,55 @@ if [ "${1:-}" = "--out" ] && [ $# -ge 2 ]; then
 fi
 mkdir -p "$OUT"
 python3 - "$OUT" <<'EOF'
-import json, sys, zipfile
+import hashlib
+import json
+import sys
+import zipfile
 from pathlib import Path
-root = Path(".")
+
+root = Path(".").resolve()
 out = Path(sys.argv[1])
 ver = json.loads((root / "manifest.json").read_text())["version"]
 name = out / f"blabla-meter-{ver}.zip"
-skip = {"build_zip.sh"}
-with zipfile.ZipFile(name, "w", zipfile.ZIP_DEFLATED) as z:
-    for p in sorted(root.rglob("*")):
-        if p.is_dir() or p.suffix == ".zip" or p.name in skip or p.name.startswith("."):
-            continue
-        z.write(p, p.relative_to(root))
-print(f"wrote {name}")
+
+# Keep the package to an explicit allowlist: a stray test/debug file must not
+# ship to the Chrome Web Store.
+ROOT_FILES = {
+    "manifest.json", "background.js", "sidepanel.html", "sidepanel.js",
+    "options.html", "options.js", "ui.css",
+}
+files = []
+for p in sorted(root.rglob("*")):
+    if p.is_dir() or p.name.startswith(".") or p.suffix == ".zip" or p.name == "build_zip.sh":
+        continue
+    rel = p.relative_to(root).as_posix()
+    if rel in ROOT_FILES or (rel.startswith("lib/") and p.suffix == ".js") \
+            or (rel.startswith("icons/") and p.suffix == ".png"):
+        files.append((rel, p))
+    else:
+        raise SystemExit(f"unexpected file in extension package: {rel}")
+
+license_file = root.parent / "LICENSE"
+if not license_file.is_file():
+    raise SystemExit("LICENSE missing from the repository root")
+files.append(("LICENSE", license_file))
+
+# Fixed metadata makes the archive reproducible from the same source tree.
+FIXED_DATE = (2026, 1, 1, 0, 0, 0)
+with zipfile.ZipFile(name, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as z:
+    for rel, p in files:
+        info = zipfile.ZipInfo(rel, date_time=FIXED_DATE)
+        info.compress_type = zipfile.ZIP_DEFLATED
+        info.create_system = 3
+        info.external_attr = (0o644 & 0xFFFF) << 16
+        z.writestr(info, p.read_bytes())
+
 with zipfile.ZipFile(name) as z:
     names = z.namelist()
     assert "manifest.json" in names and "background.js" in names, names[:5]
-    print(f"{len(names)} files, manifest + background present")
+    assert "LICENSE" in names, names
+    assert z.read("manifest.json") == (root / "manifest.json").read_bytes()
+    print(f"wrote {name}")
+    print(f"{len(names)} files, manifest + background + LICENSE present")
+print(f"sha256 {hashlib.sha256(name.read_bytes()).hexdigest()}")
 EOF

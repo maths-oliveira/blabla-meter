@@ -1,13 +1,14 @@
 # Blabla Meter — Privacy Policy
 
-*Effective 24 October 2026*
+*Effective 25 October 2026*
 
 Blabla Meter is a browser extension that rates how useful a web page is, summarises it and highlights
 low-value passages. It is open source: <https://github.com/maths-oliveira/blabla-meter>.
 
 **The short version:** Blabla Meter has no servers of its own. It does not collect analytics, track
-you, show ads or sell anything. Page content and the feedback you choose to give leave your computer
-only to reach the AI service **you** chose in the options, for the action you asked for.
+you, show ads or sell anything. Page content, ad-candidate descriptions and the feedback you choose
+to give leave your computer only to reach the AI or scoring service **you** chose in the options (or
+the optional local bridge), for the action you asked for.
 
 ## What is sent, and to whom
 
@@ -15,17 +16,17 @@ only to reach the AI service **you** chose in the options, for the action you as
 
 The instant score runs automatically when you open the side panel and uses Jev through the optional
 local helper; it does not call the generative AI provider. The **AI summary & highlights** deep dive
-runs only when you click it. When you use the deep dive, or when enough feedback triggers a memory
-relearn, Blabla Meter sends to your chosen provider:
+runs only when you click it. When you use the deep dive, Blabla Meter sends to your chosen provider:
 
 - the page's title, address (URL) and text: up to about 14,000 characters, or only the text you
   selected;
 - your learned preferences: the rules distilled from your feedback, your highlight categories, and
   your 12 most recent feedback items (page titles shortened to 80 characters, scores, votes, notes
-  and highlight corrections);
-- when feedback triggers a relearn (every 5 new items), the last 60 feedback items instead: page
-  titles shortened to 100 characters, site host, scores, votes, notes and highlight corrections.
-  This is how the preference rules are updated.
+  and highlight corrections).
+
+When feedback triggers a relearn (every 5 new items), it sends the last 60 feedback items instead:
+page titles shortened to 100 characters, site host, scores, votes, notes and highlight corrections.
+A relearn does not send the current page text. This is how the preference rules are updated.
 
 The provider is whichever one you picked in ⚙ Options: Anthropic, OpenAI, Google Gemini, Groq,
 Mistral, DeepSeek, OpenRouter, OpenCode, a custom endpoint you entered, or a program on your own
@@ -46,9 +47,13 @@ own machine), the extension also sends it:
 - your learned preference rules (shared with the helper's news reader), and the address of the
   current page to look up your time on that site in your own local usage report.
 
-The helper forwards the scoring requests to TypeSafe (the Jev model) using the TypeSafe key you
-provide, and runs any AI requests through the provider configured on your computer. Without the
-helper, none of this happens; obvious ad slots are still hidden locally.
+The helper forwards the scoring requests to TypeSafe (the Jev model; a separate paid service)
+using the TypeSafe key you provide, and runs any AI requests through the provider configured on
+your computer. The helper
+defaults to the OpenCode Zen API. Its optional `cli` mode runs the installed OpenCode agent and may
+send prompts to OpenCode's hosted free models; that mode is disabled unless you set
+`BBLA_ALLOW_CLI=1`, and it has local tools. Without the helper, none of this happens; obvious ad
+slots are still hidden locally.
 
 ## What is stored on your device
 
@@ -61,7 +66,7 @@ Everything below stays in your browser's extension storage and is never sent to 
   categories.
 - **Per-site choices:** elements you blocked with ⛔ and areas you taught with ◉.
 - **Session cache:** recent analyses and a diagnostic log. These are cleared when the browser closes.
-  The log is saved to a file only when you click 🧾, and it never contains API keys.
+  The log is saved to a file only when you click 🧾; it is filtered for API keys before saving.
 
 The optional local helper stores its own files on your computer, outside browser storage:
 `~/.config/bbla/ai.json`, `typesafe.key`, `shared-rules.json`, and the usage report. These are not

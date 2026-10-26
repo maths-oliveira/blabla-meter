@@ -8,10 +8,12 @@
 Reads the page you're on and tells you how much of it is worth your attention:
 
 - **Blabla score 0-100** — instant, via one Jev call (no waiting; needs a TypeSafe key in
-  ⚙ Options → Jev instant score & ad-block): how much of the page is actually useful to you,
+  ⚙ Options → Jev instant score & ad-block; TypeSafe is a separate paid service): how much of
+  the page is actually useful to you,
   with topic + dimension/flag chips explaining why. The one-line verdict, Pareto summary and
-  bullshit highlighter below are an on-demand **AI summary & highlights** button — nothing
-  generative runs until you click it.
+  bullshit highlighter below are an on-demand **AI summary & highlights** button; it runs only
+  when you click it. (Preference relearning is separate and can run in the background after new
+  feedback — see below.)
 - **Per-section badges** — each headed section gets its own Jev score as a small circle on the
   page; hover shows its tags (plus any AI insights once the deep dive ran for that section).
   ✕ marks is a toggle (hide / re-apply from cache, never re-runs the AI). The **◉ score**
@@ -19,7 +21,7 @@ Reads the page you're on and tells you how much of it is worth your attention:
   future scorings automatically (managed under Options → Learned score areas). Picking scores
   the element plus its similars immediately, each with its own badge.
   Stuck? The 🧾 log button downloads a diagnostic file (page extraction + extension answers,
-  no keys) to send for debugging.
+  filtered for keys) to send for debugging.
 - The score refreshes when the page body changes under the same URL (hydrating pages, SPA
   navigation); Score waits for the body to settle (thin or still-growing text is re-read
   for ~10 s) and always scores current content, never cache.
@@ -31,20 +33,22 @@ Reads the page you're on and tells you how much of it is worth your attention:
   (editable in the options).
 - **Learns from you** — 👍/👎 on the analysis, your own score, a note on why, and ✓/✗ on each
   highlight. Every 5 feedback items the AI distils them into preference rules that go with every
-  future analysis. Everything (rules, categories, feedback) is one exportable memory file.
+  future analysis; this can happen in the background and sends the feedback text to the AI provider
+  you selected. Everything (rules, categories, feedback) is one exportable memory file.
 
-- **Ad-block toggle** (🚫 in the side panel, stays ON across pages/sessions) — hides ads on every
-  page while ON. Obvious slots (`div-gpt-ad`, `adsbygoogle`, doubleclick/tabooola iframes…) are
-  hidden instantly; ambiguous nodes (sponsored/promo/popup-looking) are judged by **Jev
-  (`jev-1.13.0`, TypeSafe)** through the bridge (`POST /ads/score`, `bridge/ads.py`) — the same
-  calibrated-probability machinery as the news ranker — and hidden at `is_ad ≥ 0.55`
-  (or `≥ 0.35` + disruptive). Without a Jev key it still hides the obvious ones
+- **Ad-block toggle** (🚫 in the side panel, stays ON across pages/sessions) — hides ads on pages
+  the extension can access while ON. With all-sites access it works automatically; otherwise click
+  the Blabla Meter toolbar icon on a page first. Obvious slots (`div-gpt-ad`, `adsbygoogle`,
+  doubleclick/tabooola iframes…) are hidden instantly; ambiguous nodes (sponsored/promo/popup-looking)
+  are judged by **Jev (`jev-1.13.0`, TypeSafe)** through the bridge (`POST /ads/score`,
+  `bridge/ads.py`) — the same calibrated-probability machinery as the news ranker — and hidden at
+  `is_ad ≥ 0.55` (or `≥ 0.35` + disruptive). Without a Jev key it still hides the obvious ones
   (heuristic only). Configure everything in ⚙ Options → **Jev instant score & ad-block**: the TypeSafe key
   (sent with each scoring request; “Save key to bridge” also stores it in
   `~/.config/bbla/typesafe.key` for `./run` and the news ranker), the Jev model, and the three
   score thresholds (`hideAt`, `hideAtDisrupt` + `disruptAt`) — no re-scoring needed, the hide
-  decision is computed in code. Needs the all-sites permission (⚙ Options → Page access) for automatic
-  blocking on pages you haven't clicked the icon on.
+  decision is computed in code. The all-sites permission (⚙ Options → Page access) is needed for
+  automatic blocking on pages you haven't clicked the icon on.
 - **⛔ Block element picker + reading time & outline** (Unclutter-inspired, all local, no AI) —
   click ⛔ in the side panel, then click any distracting element to hide it on every visit to that
   site (saved per site in ⚙ Options → Blocked elements, works even with 🚫 off, `Esc` cancels).
@@ -82,7 +86,7 @@ Categories, regex rules and scores: `usage/categories.json`. Private data stays 
 
 ### Chrome Web Store (recommended)
 
-[Install Blabla Meter](https://chromewebstore.google.com/detail/blabla-meter/emjbfdcigbfojhdipapdjaanlkhcjoai) — works in Chrome, Brave, Edge and other Chromium browsers. No build step, no helper needed for the AI summary; the optional local helper adds the instant score, section badges and ad-block.
+[Install Blabla Meter](https://chromewebstore.google.com/detail/blabla-meter/emjbfdcigbfojhdipapdjaanlkhcjoai) — works in Chrome, Brave, Edge and other Chromium browsers. No build step; the AI summary needs no helper. The optional local bridge adds the instant Jev score, section badges, the usage report and Jev-judged ad-block.
 
 ### From source (development)
 
@@ -107,17 +111,18 @@ Brave is Chromium under the hood, so the MV3 extension loads as-is — no build 
 | Mistral | a Mistral key — free tier (default `mistral-small-latest`) |
 | DeepSeek | a DeepSeek key (default `deepseek-chat`) |
 | **Ollama** — free, local | Ollama running with a pulled model; type its name in Model. A 403 means start Ollama with `OLLAMA_ORIGINS=chrome-extension://*` |
-| **Local bridge** — free | the `opencode` CLI installed; run `python3 bridge/bridge.py` (port 8804). Only the Chrome Web Store extension ID is accepted; for an unpacked build, start it with `BBLA_EXTENSION_IDS=<your-extension-id>` |
+| **Local bridge** (optional) | run `python3 bridge/bridge.py` (port 8804) with a Zen/OpenRouter key, or set `BBLA_ALLOW_CLI=1` to use the installed `opencode` CLI. Only the Chrome Web Store extension ID is accepted; for an unpacked build, start it with `BBLA_EXTENSION_IDS=<your-extension-id>` |
 | Custom | any OpenAI-compatible endpoint (LM Studio, vLLM, LiteLLM…) |
 
 Each provider keeps its own key, so switching providers never sends one vendor's key to another.
 Providers outside the built-in host list ask once for access to their API domain when you press Save.
 
 OpenCode's free models are only served to the OpenCode app itself, so the extension can't call them
-directly — the bridge runs them through your installed `opencode`. Configure the bridge's own
-provider/model in `~/.config/bbla/ai.json` (same format as the other ~/src apps). The default
-`cli` provider runs the installed OpenCode agent, which has local tools; page text is untrusted
-input. If that matters for the pages you score, configure a plain API provider (Zen, OpenRouter,
+directly — the bridge can run them through your installed `opencode`. Configure the bridge's own
+provider/model in `~/.config/bbla/ai.json` (same format as the other ~/src apps). The bridge
+defaults to Zen (a plain API provider). The `cli` provider runs the installed OpenCode agent, which
+has local tools; page text is untrusted input, so it is opt-in: set `BBLA_ALLOW_CLI=1` and restart
+the bridge. If that matters for the pages you score, use a plain API provider (Zen, OpenRouter,
 Anthropic, etc.) instead, or score only pages you trust. The bridge isolates the working directory
 but cannot sandbox an agent that is allowed to read your home directory.
 
@@ -130,16 +135,19 @@ bridge needs no restart or config edit after you move a slider.
 
 ## Privacy
 
-No analytics, no servers of ours: page text and the feedback you give leave your computer only to
-reach the AI provider you choose, for the action you asked for. The optional local helper stays on
-your computer. Full policy: [PRIVACY.md](PRIVACY.md). Chrome Web Store listing text:
-[store/listing.md](store/listing.md).
+No analytics and no servers of ours. Page text and the feedback you give are sent to the provider
+you choose (directly or through the optional local bridge), for the action you asked for.
+Ad-block candidate descriptions are sent to TypeSafe through that bridge when it is running. The
+bridge runs on your computer, but its default CLI provider may forward prompts to OpenCode's hosted
+free models; it is not local inference unless you configure a local provider. Full policy:
+[PRIVACY.md](PRIVACY.md). Chrome Web Store listing text: [store/listing.md](store/listing.md).
 
 ## Tests
 
 ```bash
 node --test tests/*.test.mjs
-python3 -m unittest -v tests/test_bridge_origin.py
+python3 -m unittest -v tests/test_bridge_origin.py tests/test_bridge_ai.py
+python3 tests/e2e_sidepanel_ui.py   # optional browser regression (Playwright)
 ```
 
 CI runs both suites. End-to-end was verified with Playwright loading the unpacked extension in

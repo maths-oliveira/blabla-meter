@@ -10,14 +10,14 @@
 <header class="top"><h1 class="brand">Blabla Meter</h1><span id="ext-version" class="muted small"></span><span class="muted small" style="margin-left:auto">options &amp; memory</span></header>
 <main>
   <section class="card">
-    <h3>Extension</h3>
+    <h2>Extension</h2>
     <div class="row">
       <button id="btn-enabled" type="button">⏻ on</button>
       <span class="muted small">Master switch: while off Blabla Meter touches no page (no scoring, badges, pickers or ad-blocking).</span>
     </div>
   </section>
   <section class="card">
-    <h3>AI provider</h3>
+    <h2>AI provider</h2>
     <p class="muted small">Pick a provider, paste your key and press Save. Free tiers:
       <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">Gemini</a>,
       <a href="https://console.groq.com/keys" target="_blank" rel="noopener">Groq</a>,
@@ -38,19 +38,22 @@
   </section>
 
   <section class="card">
-    <h3>Jev instant score &amp; ad-block — key and thresholds</h3>
-    <p class="muted small">The TypeSafe key powers both the instant Blabla score and the Jev
-    ad-block decisions. Without it, the side panel offers the slower AI summary &amp; highlights
-    instead, and the 🚫 toggle still hides obvious ads. The key is sent with each scoring request;
-    “Save key to bridge” also stores it in <code>~/.config/bbla/typesafe.key</code> so
-    <code>./run</code> and the news ranker use it too.</p>
+    <h2>Jev instant score &amp; ad-block — key and thresholds</h2>
+    <p class="muted small">TypeSafe is a separate paid scoring service. Its key powers both the
+    instant Blabla score and the Jev ad-block decisions. Without it, the side panel offers the
+    slower AI summary &amp; highlights instead, and the 🚫 toggle still hides obvious ads. The key
+    is sent with each scoring request; “Save key to bridge” also stores it in
+    <code>~/.config/bbla/typesafe.key</code> so <code>./run</code> and the news ranker use it too.</p>
     <label>TypeSafe API key <input id="typesafeKey" type="password" autocomplete="off" placeholder="tsk-…"></label>
     <label>Jev model <input id="jevModel" placeholder="jev-1.13.0"></label>
     <label>Hide when is_ad ≥ <span id="hideAt-val" class="muted"></span>
-      <input id="hideAt" type="range" min="0" max="1" step="0.05"></label>
+      <input id="hideAt" type="range" min="0" max="1" step="0.05"
+             aria-label="Hide an ad when its is_ad score is at least this value"></label>
     <label>Hide when is_ad ≥ <span id="hideAtDisrupt-val" class="muted"></span> + disrupts ≥ <span id="disruptAt-val" class="muted"></span>
-      <input id="hideAtDisrupt" type="range" min="0" max="1" step="0.05">
-      <input id="disruptAt" type="range" min="0" max="1" step="0.05" style="margin-top:4px"></label>
+      <input id="hideAtDisrupt" type="range" min="0" max="1" step="0.05"
+             aria-label="Hide a disruptive ad when its is_ad score is at least this value">
+      <input id="disruptAt" type="range" min="0" max="1" step="0.05" style="margin-top:4px"
+             aria-label="Disruptiveness score required with the lower is_ad threshold"></label>
     <div class="row">
       <button id="save-ads" class="primary" type="button">Save ad-block</button>
       <button id="test-jev" type="button">Test Jev</button>
@@ -61,15 +64,15 @@
   </section>
 
   <section class="card">
-    <h3>Page access</h3>
-    <p class="muted small">By default Blabla Meter can read a page only after you click its toolbar icon on it. Allow all sites to analyze any tab straight from the side panel.</p>
+    <h2>Page access</h2>
+    <p class="muted small">By default Blabla Meter can read a page only after you click its toolbar icon on it. Allow all sites to analyze any tab straight from the side panel and to apply ad-blocking automatically on pages you have not clicked.</p>
     <button id="perm" type="button">Allow all sites</button> <span id="perm-state" class="muted small" role="status" aria-live="polite"></span>
   </section>
 
   <section class="card">
-    <h3>Learned preferences</h3>
+    <h2>Learned preferences</h2>
     <p class="muted small">Distilled from your thumbs, scores and notes every 5 feedback items. Sent with every analysis. Edit freely, one per line.</p>
-    <textarea id="rules" rows="6"></textarea>
+    <textarea id="rules" rows="6" aria-label="Learned preference rules, one per line"></textarea>
     <div class="row">
       <button id="save-rules" type="button" class="primary">Save rules</button>
       <button id="relearn" type="button">Re-learn from feedback now</button>
@@ -78,7 +81,7 @@
   </section>
 
   <section class="card">
-    <h3>Bullshit categories</h3>
+    <h2>Bullshit categories</h2>
     <p class="muted small">The highlighter uses these. The AI proposes new ones when a passage fits none (marked “learned”).</p>
     <table>
       <thead><tr><th scope="col"><span class="sr-only">Color</span></th><th scope="col">Name</th><th scope="col">Meaning</th><th scope="col"><span class="sr-only">Delete</span></th></tr></thead>
@@ -91,30 +94,30 @@
   </section>
 
   <section class="card">
-    <h3>Blocked elements per site</h3>
+    <h2>Blocked elements per site</h2>
     <p class="muted small">Elements you blocked with the side panel’s “⛔ block” picker (Unclutter-style).
     They hide on every visit to that site, even with the 🚫 toggle off.</p>
     <ol id="blocks" class="small"></ol>
-    <h3>Learned score areas per site</h3>
+    <h2>Learned score areas per site</h2>
     <p class="muted small">Sections you scored with the side panel's “◉ score” picker. They are
     included as blocks in every future scoring on that site.</p>
     <ol id="scoreareas" class="small"></ol>
   </section>
 
   <section class="card">
-    <h3>Memory file</h3>
+    <h2>Memory file</h2>
     <p class="muted small">Everything Blabla Meter learned (rules, categories, feedback, plus the ◉-score areas per site) as one JSON file.</p>
     <div class="row">
       <button id="export" type="button">Export</button>
       <label class="row" style="margin:0">Import <input id="import" type="file" accept="application/json" aria-label="Import memory file"></label>
       <button id="reset" type="button">Reset memory</button>
     </div>
-    <h3>Recent feedback</h3>
+    <h2>Recent feedback</h2>
     <ol id="feedback" class="small"></ol>
   </section>
 
   <section class="card" id="dev-card" hidden>
-    <h3>Developer</h3>
+    <h2>Developer</h2>
     <div class="row">
       <button id="reload-ext" type="button" title="Reload the extension code from disk — same as the ↻ button on brave://extensions">↻ Reload extension</button>
       <span class="muted small">Use after editing extension files. The side panel closes; reopen it via the toolbar icon.</span>
@@ -122,10 +125,10 @@
   </section>
 
   <section class="card">
-    <h3>Support Blabla Meter</h3>
+    <h2>Support Blabla Meter</h2>
     <div class="row">
       <a class="btn primary" href="https://buymeacoffee.com/maths.oliveira" target="_blank" rel="noopener">☕ Buy me a coffee</a>
-      <span class="muted small">Blabla Meter is free and open source. Page content goes only to the AI provider you choose, or to the optional local helper on your computer; the helper adds instant scoring. If it saves you time, a coffee keeps it going.
+      <span class="muted small">Blabla Meter is free and open source. Page content and feedback go only to the AI provider you choose, or to the optional local bridge on your computer (which forwards to its configured provider). Ad-block sends candidate descriptions to TypeSafe through that bridge. If it saves you time, a coffee keeps it going.
       If the coffee page is unavailable, email <a href="mailto:so.matheus@proton.me">so.matheus@proton.me</a>.</span>
     </div>
   </section>

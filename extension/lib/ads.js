@@ -2,7 +2,8 @@
 // The DOM-touching functions live in page.js (they must stay self-contained for
 // chrome.scripting.executeScript); the selector lists here mirror those.
 
-export const OBVIOUS_SELECTORS = [  '[id^="div-gpt-ad"]',
+export const OBVIOUS_SELECTORS = [
+  '[id^="div-gpt-ad"]',
   '[id*="-ad-"]',
   '[id$="-ad"]',
   '[id*="google_ads"]',
@@ -10,7 +11,12 @@ export const OBVIOUS_SELECTORS = [  '[id^="div-gpt-ad"]',
   'ins.adsbygoogle',
   '[data-ad-slot]',
   '[data-ad-client]',
-  '[data-testid*="ad"]',
+  '[data-testid="ad"]',
+  '[data-testid="advertisement"]',
+  '[data-testid^="ad-"]',
+  '[data-testid$="-ad"]',
+  '[data-testid*="ad-slot"]',
+  '[data-testid*="advert"]',
   'iframe[src*="doubleclick.net"]',
   'iframe[src*="googlesyndication.com"]',
   'iframe[src*="amazon-adsystem.com"]',
@@ -21,7 +27,7 @@ export const OBVIOUS_SELECTORS = [  '[id^="div-gpt-ad"]',
 
 export const CANDIDATE_SELECTORS = [
   ...OBVIOUS_SELECTORS,
-  'aside[aria-label*="d"]',
+  'aside[aria-label*="ad" i]',
   '[class*="sponsor"]',
   '[class*="promo"]',
   '[class*="adsbox"]',

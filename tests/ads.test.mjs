@@ -30,6 +30,13 @@ test("obvious selectors cover the classic ad markers", () => {
   assert.ok(all.includes("div-gpt-ad") && all.includes("adsbygoogle") && all.includes("doubleclick"));
 });
 
+test("obvious selectors do not treat generic data-testid values as ads", () => {
+  const all = OBVIOUS_SELECTORS.join(",");
+  assert.ok(!all.includes('[data-testid*="ad"]'));
+  assert.ok(all.includes('[data-testid^="ad-"]'));
+  assert.ok(all.includes('[data-testid$="-ad"]'));
+});
+
 test("buildAdsPayload caps candidates and trims fields", () => {
   const cands = Array.from({ length: 30 }, (_, i) => ({
     id: i, tag: "div", id_class: "x".repeat(500), size: "300x250",

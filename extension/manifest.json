@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Blabla Meter",
-  "version": "0.9.3",
+  "version": "0.9.4",
   "description": "How much of this page is useful? Blabla score, summary and bullshit highlighter with your own AI provider or a local model.",
   "homepage_url": "https://github.com/maths-oliveira/blabla-meter",
   "minimum_chrome_version": "114",

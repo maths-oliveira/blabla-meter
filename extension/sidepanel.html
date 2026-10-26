@@ -20,7 +20,7 @@
   <section id="usage" class="usage" hidden></section>
 
   <section id="setup" class="card" hidden>
-    <h3 id="setup-title">Set up your AI</h3>
+    <h2 id="setup-title">Set up your AI</h2>
     <p id="setup-msg" class="muted small"></p>
     <div class="row">
       <a id="setup-open" class="btn" href="options.html" target="_blank">⚙ Options</a>
@@ -36,7 +36,7 @@
     <button id="btn-ads" type="button" title="Hide ads on every page while ON (Jev via the bridge + instant heuristics)">🚫 ads: off</button>
     <button id="btn-pick" type="button" title="Click a page element to block it on this site (Unclutter-style)">⛔ block</button>
     <button id="btn-score" type="button" title="Click a section to score just it — it learns the area for this site">◉ score</button>
-    <button id="btn-log" type="button" title="Download diagnostic log: what the page gave + what the extension answered (no keys inside)">🧾 log</button>
+    <button id="btn-log" type="button" title="Download diagnostic log: what the page gave + what the extension answered (filtered for keys)">🧾 log</button>
     <span id="ads-status" class="muted small" role="status" aria-live="polite"></span>
   </div>
   <p id="status" class="status" role="status" aria-live="polite" hidden></p>
@@ -58,16 +58,16 @@
     </details>
 
     <section id="deep" hidden>
-    <h3>AI deep dive</h3>
+    <h2>AI deep dive</h2>
     <p id="verdict"></p>
-    <h3>Pareto summary</h3>
+    <h2>Pareto summary</h2>
     <ul id="pareto" class="pareto"></ul>
 
-    <h3>Bullshit highlighter <span id="hl-count" class="muted small"></span></h3>
+    <h2>Bullshit highlighter <span id="hl-count" class="muted small"></span></h2>
     <div id="legend" class="legend"></div>
     <ol id="highlights" class="hls"></ol>
 
-    <h3>Your feedback</h3>
+    <h2>Your feedback</h2>
     <div class="fb">
       <div class="row">
         <button id="fb-up" type="button" title="good analysis" aria-label="Good analysis">👍</button>

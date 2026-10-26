@@ -375,7 +375,12 @@ export function collectAdCandidates() {
   const OBVIOUS = [
     '[id^="div-gpt-ad"]', '[id*="-ad-"]', '[id$="-ad"]', '[id*="google_ads"]',
     '[class*="gpt-ad"]', 'ins.adsbygoogle', '[data-ad-slot]', '[data-ad-client]',
-    '[data-testid*="ad"]', 'iframe[src*="doubleclick.net"]',
+    // Do not use [data-testid*="ad"]: it also matches header, loading, download,
+    // breadcrumb, etc. Only explicit ad-shaped test ids are obvious.
+    '[data-testid="ad"]', '[data-testid="advertisement"]',
+    '[data-testid^="ad-"]', '[data-testid$="-ad"]',
+    '[data-testid*="ad-slot"]', '[data-testid*="advert"]',
+    'iframe[src*="doubleclick.net"]',
     'iframe[src*="googlesyndication.com"]', 'iframe[src*="amazon-adsystem.com"]',
     'iframe[src*="outbrain.com"]', 'iframe[src*="taboola.com"]', 'iframe[src*="criteo.com"]',
   ];
@@ -389,6 +394,7 @@ export function collectAdCandidates() {
   const seen = new Set();
   const out = [];
   const push = (el, obvious) => {
+    if (out.length >= 60) return;
     if (!el || el.nodeType !== 1 || seen.has(el)) return;
     const r = el.getBoundingClientRect ? el.getBoundingClientRect() : { width: 0, height: 0 };
     if (r.width === 0 && r.height === 0 && !el.textContent) return; // detached/hidden
@@ -409,10 +415,17 @@ export function collectAdCandidates() {
       text, html_hint: hint.slice(0, 300), obvious: !!obvious,
       promoText: PROMO.test(text.slice(0, 500)),
     });
-    if (out.length >= 60) return;
   };
-  document.querySelectorAll(OBVIOUS.join(",")).forEach((el) => push(el, true));
-  if (out.length < 60) document.querySelectorAll(EXTRA.join(",")).forEach((el) => push(el, false));
+  for (const el of document.querySelectorAll(OBVIOUS.join(","))) {
+    if (out.length >= 60) break;
+    push(el, true);
+  }
+  if (out.length < 60) {
+    for (const el of document.querySelectorAll(EXTRA.join(","))) {
+      if (out.length >= 60) break;
+      push(el, false);
+    }
+  }
   return { url: location.href, host: location.host, title: document.title, candidates: out };
 }
 

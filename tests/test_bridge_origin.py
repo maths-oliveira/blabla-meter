@@ -67,10 +67,12 @@ class BridgeOriginTest(unittest.TestCase):
         thread = threading.Thread(target=srv.serve_forever, daemon=True)
         thread.start()
         try:
-            def request(method="GET", origin=None):
-                req = urllib.request.Request(f"http://127.0.0.1:{port}/health", method=method)
+            def request(method="GET", origin=None, path="/health", body=None, headers=None):
+                req = urllib.request.Request(f"http://127.0.0.1:{port}{path}", method=method, data=body)
                 if origin:
                     req.add_header("Origin", origin)
+                for key, value in (headers or {}).items():
+                    req.add_header(key, value)
                 try:
                     with urllib.request.urlopen(req, timeout=5) as res:
                         return res.status, res.headers.get("Access-Control-Allow-Origin")
@@ -84,6 +86,24 @@ class BridgeOriginTest(unittest.TestCase):
             self.assertEqual(request("GET", "chrome-extension://other")[0], 403)
             self.assertEqual(request("OPTIONS", "chrome-extension://other")[0], 403)
             self.assertEqual(request("GET", "https://evil.example")[0], 403)
+
+            # A no-Origin local tool is still allowed (the documented local
+            # path), but a browser-shaped no-Origin POST is rejected. Extension
+            # POSTs carry an allowed Origin.
+            read_body = b'{"op":"read"}'
+            self.assertEqual(request("POST", None, "/memory/rules", read_body)[0], 200)
+            self.assertEqual(request("POST", None, "/memory/rules", read_body,
+                                     headers={"Sec-Fetch-Site": "none"})[0], 403)
+            self.assertEqual(request("POST", allowed, "/memory/rules", read_body)[0], 200)
+            self.assertEqual(request("POST", "chrome-extension://other", "/memory/rules", read_body)[0], 403)
+            self.assertEqual(request("POST", allowed, "/usage/site", b'{"url":"https://example.com"}')[0], 200)
+
+            # Old no-Origin data GETs are closed.
+            self.assertEqual(request("GET", None, "/memory/rules")[0], 403)
+            self.assertEqual(request("GET", None, "/usage/site")[0], 403)
+            self.assertEqual(request("GET", None, "/usage")[0], 200)  # local tool
+            self.assertEqual(request("GET", None, "/usage", headers={"Sec-Fetch-Mode": "cors"})[0], 403)
+            self.assertEqual(request("GET", None, "/usage", headers={"Sec-Fetch-Mode": "navigate"})[0], 200)
         finally:
             srv.shutdown()
             srv.server_close()

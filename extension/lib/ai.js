@@ -108,15 +108,17 @@ export async function chat(settings, messages, { fetchImpl = fetch, timeoutMs = 
   const { headers, body } = buildRequest(settings, messages);
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), timeoutMs);
-  let res;
+  let res, raw;
   try {
     res = await fetchImpl(url, { method: "POST", headers, body: JSON.stringify(body), signal: ctrl.signal });
+    // Keep the abort timer alive while reading the body: a provider can send
+    // headers and then stall the stream forever.
+    raw = await res.text();
   } catch (e) {
     throw new Error(e.name === "AbortError" ? "The AI took too long to answer." : `Cannot reach ${p.label}: ${e.message}`);
   } finally {
     clearTimeout(timer);
   }
-  const raw = await res.text();
   let data = null;
   try { data = JSON.parse(raw); } catch { /* handled below */ }
   if (!res.ok) {

@@ -9,6 +9,12 @@ chrome.runtime.onInstalled.addListener(() => {
   chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(() => {});
 });
 
+// Extension pages ping this port while open; it keeps the worker alive across
+// a long AI/bridge fetch (MV3 workers can otherwise stop after ~30 s idle).
+chrome.runtime.onConnect.addListener((port) => {
+  if (port.name === "keepalive") port.onMessage.addListener(() => {});
+});
+
 async function getSettings() {
   const { settings } = await chrome.storage.local.get("settings");
   const merged = { ...DEFAULT_SETTINGS, ...(settings || {}) };
@@ -66,7 +72,11 @@ async function bridgeBase() {
 }
 async function sharedNewsRules() {
   try {
-    const r = await fetch((await bridgeBase()) + "/memory/rules", { signal: AbortSignal.timeout(1500) });
+    // POST (not GET): the bridge requires an extension Origin on data routes.
+    const r = await fetch((await bridgeBase()) + "/memory/rules", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ op: "read" }), signal: AbortSignal.timeout(1500),
+    });
     return r.ok ? ((await r.json()).news || []) : [];
   } catch { return []; }
 }

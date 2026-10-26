@@ -2,6 +2,9 @@ const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
 import { DEFAULT_SETTINGS, PROVIDERS, keyFor } from "./lib/ai.js";
+import { keepServiceWorkerAlive } from "./lib/keepalive.js";
+
+keepServiceWorkerAlive();
 
 let tab = null;
 let fast = null;      // instant Jev score (no generative AI)
@@ -123,6 +126,7 @@ async function onTabChange() {
     if (seq !== navSeq) return;
     status("Blabla Meter is off — turn it on with the ⏻ toggle.");
     $("result").hidden = true;
+    $("result").classList.remove("deep-only");
     $("deep").hidden = true;
     $("btn-deep").hidden = true;
     return;
@@ -131,6 +135,7 @@ async function onTabChange() {
   await refreshSetup();
   if (seq !== navSeq) return;
   $("result").hidden = true;
+  $("result").classList.remove("deep-only");
   $("deep").hidden = true;
   $("btn-deep").hidden = true;
   fast = null;
@@ -147,13 +152,6 @@ async function onTabChange() {
     fast = fcached;
     await showScore(fast);
     if (seq !== navSeq || scoreAt !== scoreSeq || deepAt !== deepSeq) return;
-    const dkey = "analysis:" + (t.url || "").split("#")[0];
-    const dcached = (await chrome.storage.session.get(dkey))[dkey];
-    if (dcached) {
-      analysis = dcached;
-      await showDeep(analysis);
-      if (seq !== navSeq || scoreAt !== scoreSeq || deepAt !== deepSeq) return;
-    }
     // Same URL but a different body (hydration, SPA navigation, live feed):
     // re-score instead of showing a stale number.
     if (hasProvider && bridgeUp !== false) {
@@ -167,7 +165,17 @@ async function onTabChange() {
         }
       } catch {}
     }
-  } else if (hasProvider && bridgeUp !== false && scoreAt === scoreSeq && deepAt === deepSeq) {
+  }
+  // The AI-only path has no fast score; its cached deep dive should still be
+  // shown when the panel reopens.
+  const dkey = "analysis:" + (t.url || "").split("#")[0];
+  const dcached = (await chrome.storage.session.get(dkey))[dkey];
+  if (seq !== navSeq || scoreAt !== scoreSeq || deepAt !== deepSeq) return;
+  if (dcached) {
+    analysis = dcached;
+    await showDeep(analysis);
+    if (seq !== navSeq || scoreAt !== scoreSeq || deepAt !== deepSeq) return;
+  } else if (!fcached && hasProvider && bridgeUp !== false && scoreAt === scoreSeq && deepAt === deepSeq) {
     scoreFast();
   }
   // re-apply ad-blocking on the new page while the toggle stays ON
@@ -201,7 +209,11 @@ async function showUsage(url) {
   const base = await bridgeBase();
   let u;
   try {
-    const r = await fetch(`${base}/usage/site?url=${encodeURIComponent(url)}`, { signal: AbortSignal.timeout(2500) });
+    // POST (not GET): the bridge requires an extension Origin on data routes.
+    const r = await fetch(`${base}/usage/site`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url }), signal: AbortSignal.timeout(2500),
+    });
     u = await r.json();
   } catch { return; }   // bridge not running: no usage box
   if (tab?.url !== url) return;
@@ -281,6 +293,10 @@ async function deepDive() {
   if (nav !== navSeq || !t || !/^https?:/.test(t.url || "")) return;
   tab = t;
   const tabId = t.id, url = t.url;
+  // The AI-only path has no instant score, so #result is normally hidden.
+  // Make the deep-dive container visible before showing progress or errors.
+  $("result").hidden = false;
+  $("result").classList.toggle("deep-only", !fast);
   $("btn-deep").disabled = true;
   $("btn-analyze").disabled = true;
   $("deep-status").textContent = "Asking the AI… (10–60 s)";
@@ -320,6 +336,7 @@ async function showScore(f) {
   if (f.url && tab?.url && String(f.url).split("#")[0] !== String(tab.url).split("#")[0]) return;
   const cats = categoriesFrom(memory);
   $("result").hidden = false;
+  $("result").classList.remove("deep-only");
   $("deep").hidden = true;
   const rawScore = Number(f.score);
   const s = Number.isFinite(rawScore) ? Math.max(0, Math.min(100, Math.round(rawScore))) : null;
@@ -376,6 +393,8 @@ async function showDeep(a) {
   const cats = categoriesFrom(memory);
   const highlights = Array.isArray(a.highlights) ? a.highlights.filter((h) => h && typeof h === "object") : [];
   const pareto = Array.isArray(a.pareto) ? a.pareto : [];
+  $("result").hidden = false;
+  $("result").classList.toggle("deep-only", !fast);
   $("deep").hidden = false;
   $("verdict").textContent = a.verdict || "";
   $("pareto").innerHTML = pareto.map((p) => `<li>${esc(p)}</li>`).join("") || '<li class="muted">Nothing worth keeping.</li>';
@@ -605,6 +624,7 @@ $("btn-power").onclick = async () => {
       if (tab) await send({ type: "clear", tabId: tab.id }).catch(() => {});
     } catch {}
     $("result").hidden = true;
+    $("result").classList.remove("deep-only");
     $("deep").hidden = true;
     $("btn-deep").hidden = true;
     status("Blabla Meter is off — turn it on with the ⏻ toggle.");
@@ -678,6 +698,7 @@ chrome.storage.onChanged.addListener((changes, area) => {
     paintPower();
     if (!extOn) {
       $("result").hidden = true;
+      $("result").classList.remove("deep-only");
       $("deep").hidden = true;
       $("btn-deep").hidden = true;
       status("Blabla Meter is off — turn it on with the ⏻ toggle.");

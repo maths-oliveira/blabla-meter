@@ -12,7 +12,23 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: 22
+      - name: Syntax-check extension JavaScript
+        run: find extension -name '*.js' -print0 | xargs -0 -n1 node --check
       - run: node --test tests/*.test.mjs
+      - name: Check version consistency
+        run: |
+          python3 - <<'PY'
+          import json
+          manifest = json.load(open("extension/manifest.json", encoding="utf-8"))
+          package = json.load(open("package.json", encoding="utf-8"))
+          assert manifest["version"] == package["version"], (manifest["version"], package["version"])
+          print("version", manifest["version"])
+          PY
+      - name: Build and inspect the release zip
+        run: |
+          ./extension/build_zip.sh --out /tmp/bbla-dist
+          unzip -l /tmp/bbla-dist/blabla-meter-*.zip
+      - run: git diff --check
 
   python:
     runs-on: ubuntu-latest
@@ -21,4 +37,6 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
-      - run: python3 -m unittest tests/test_bridge_origin.py
+      - name: Compile Python sources
+        run: python3 -m compileall -q bridge usage news tests
+      - run: python3 -m unittest tests/test_bridge_origin.py tests/test_bridge_ai.py

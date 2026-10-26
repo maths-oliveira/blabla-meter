@@ -3,9 +3,9 @@
 Providers
   - ``cli``        the installed ``opencode`` binary (``opencode run``). Serves OpenCode's free
                    models, which the HTTP API only allows from inside OpenCode. No key needed.
-                   The agent has local tools and the page text is untrusted input; use a plain
-                   API provider instead when scoring untrusted pages.
-  - ``zen``        OpenCode Zen HTTP API (pay per use), OpenAI-compatible.
+                   This is an agent with local tools and the page text is untrusted input, so it
+                   is opt-in only: set ``BBLA_ALLOW_CLI=1`` and restart the bridge.
+  - ``zen``        OpenCode Zen HTTP API (pay per use), OpenAI-compatible. This is the default.
   - ``go``         OpenCode Go subscription HTTP API.
   - ``openrouter`` OpenRouter (``openrouter/free`` routes to a free model).
   - ``custom``     any OpenAI-compatible ``/chat/completions`` endpoint.
@@ -33,8 +33,10 @@ from pathlib import Path
 OPENCODE_AUTH = Path.home() / ".local" / "share" / "opencode" / "auth.json"
 TIMEOUT = 180
 
+DEFAULT_PROVIDER = "zen"
+
 PROVIDERS = {
-    "cli": {"label": "OpenCode installed (free models, no key)", "model": "mimo-v2.6-flash-free"},
+    "cli": {"label": "OpenCode CLI agent (opt-in; local tools)", "model": "mimo-v2.6-flash-free"},
     "zen": {"label": "OpenCode Zen API (pay per use)", "model": "deepseek-v4.1-flash",
             "url": "https://opencode.ai/zen/v1/chat/completions", "auth": "opencode",
             "env": "OPENCODE_API_KEY"},
@@ -51,6 +53,11 @@ PROVIDERS = {
 
 class AIError(Exception):
     """A failure that can be shown to the user as-is."""
+
+
+def cli_allowed() -> bool:
+    """The installed OpenCode agent has local tools; never enable it implicitly."""
+    return os.environ.get("BBLA_ALLOW_CLI") == "1"
 
 
 def extract_json(text: str):
@@ -96,8 +103,14 @@ class AI:
             cfg = json.loads(self._config_file().read_text(encoding="utf-8"))
         except (OSError, ValueError):
             cfg = {}
-        provider = cfg.get("provider") if cfg.get("provider") in PROVIDERS else "cli"
-        model = str(cfg.get("model") or "").strip() or PROVIDERS[provider]["model"]
+        configured = cfg.get("provider")
+        provider = configured if configured in PROVIDERS else DEFAULT_PROVIDER
+        if provider == "cli" and not cli_allowed():
+            provider = DEFAULT_PROVIDER
+        # If we ignored a bad/unsafe provider, don't carry its model into the
+        # fallback provider (a CLI model name is not valid for Zen).
+        model = (str(cfg.get("model") or "").strip() if provider == configured else "") \
+            or PROVIDERS[provider]["model"]
         return {"provider": provider, "model": model, "base_url": str(cfg.get("base_url") or "")}
 
     def api_key(self, provider: str) -> tuple:
@@ -129,6 +142,7 @@ class AI:
                               "key": self.api_key(k)[1] if k != "cli" else "",
                               "needs_key": k != "cli"} for k, v in PROVIDERS.items()},
             "cli_installed": bool(shutil.which("opencode")),
+            "cli_enabled": cli_allowed(),
         }
 
     def save_config(self, data: dict) -> dict:
@@ -136,6 +150,9 @@ class AI:
         provider = data.get("provider", cfg["provider"])
         if provider not in PROVIDERS:
             raise AIError(f"unknown provider: {provider}")
+        if provider == "cli" and not cli_allowed():
+            raise AIError("the OpenCode CLI agent is opt-in because it has local tools; "
+                          "set BBLA_ALLOW_CLI=1 and restart the bridge to enable it")
         if provider != cfg["provider"] and "model" not in data:
             cfg["model"] = PROVIDERS[provider]["model"]
         cfg["provider"] = provider

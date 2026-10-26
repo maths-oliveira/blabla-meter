@@ -1,6 +1,9 @@
 import { DEFAULT_SETTINGS, PROVIDERS, endpointFor } from "./lib/ai.js";
 import { EMPTY_MEMORY, sanitizeMemory } from "./lib/analysis.js";
 import { DEFAULT_ADS_THRESHOLDS } from "./lib/ads.js";
+import { keepServiceWorkerAlive } from "./lib/keepalive.js";
+
+keepServiceWorkerAlive();
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -16,7 +19,7 @@ const KEY_HELP = {
   mistral: "Mistral key (console.mistral.ai → API keys). Has a free tier.",
   deepseek: "DeepSeek key (platform.deepseek.com → API keys). Pay per use, cheap.",
   ollama: "Free, runs on this computer. Type a model you pulled (e.g. llama3.2). A 403 means Ollama refuses the extension: start it with OLLAMA_ORIGINS=chrome-extension://*.",
-  bridge: "Runs the free OpenCode models through the opencode installed on this computer: start bridge/bridge.py (see README). The installed agent has local tools; use a plain API provider for untrusted pages.",
+  bridge: "Optional local bridge. It defaults to OpenCode Zen (API key required). For free OpenCode models, set BBLA_ALLOW_CLI=1 and start bridge/bridge.py (see README); the installed CLI agent has local tools, so use a plain API provider for untrusted pages.",
   custom: "Any OpenAI-compatible server (key optional).",
 };
 

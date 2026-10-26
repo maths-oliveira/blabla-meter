@@ -58,3 +58,19 @@ test("chat needs a model for ollama and reads Gemini's array errors", async () =
   const bad = reply([{ error: { message: "API key not valid" } }], 400);
   await assert.rejects(chat({ provider: "gemini", keys: { gemini: "k" } }, msgs, { fetchImpl: bad }), /400.*API key not valid/);
 });
+
+test("chat timeout stays active while the response body is read", async () => {
+  const stalled = async (_url, opts) => ({
+    ok: true,
+    status: 200,
+    text: () => new Promise((_, reject) => {
+      const abort = () => reject(Object.assign(new Error("aborted"), { name: "AbortError" }));
+      if (opts.signal.aborted) return abort();
+      opts.signal.addEventListener("abort", abort, { once: true });
+    }),
+  });
+  await assert.rejects(
+    chat({ provider: "zen", key: "k" }, msgs, { fetchImpl: stalled, timeoutMs: 30 }),
+    /took too long/,
+  );
+});
