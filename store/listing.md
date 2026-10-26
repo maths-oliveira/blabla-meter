@@ -101,5 +101,5 @@ Visibility: Public. Regions: all.
 For 0.9.4, use the copy above, keep the Support/Homepage URLs, and make sure the listing says the
 instant score needs a separate scoring key while the AI summary is on demand. Before submitting,
 push the updated `PRIVACY.md` to `main` (the privacy URL above must not point at stale text) and
-verify the public raw URL. 0.9.3 remains the pending submission; do not overwrite its package or
-resubmit it with this draft. Do not reuse the old provider-name list.
+verify the public raw URL. 0.9.4 was submitted on 25 October 2026 and is pending review; 0.9.3 was
+canceled so its package would not be overwritten. Do not reuse the old provider-name list.
