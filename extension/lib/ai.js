@@ -18,7 +18,7 @@ export const PROVIDERS = {
   mistral: { label: "Mistral", url: "https://api.mistral.ai/v1/chat/completions", model: "mistral-small-latest", needsKey: true, temperature: true },
   deepseek: { label: "DeepSeek", url: "https://api.deepseek.com/chat/completions", model: "deepseek-chat", needsKey: true, temperature: true },
   ollama: { label: "Ollama (local models)", url: "http://127.0.0.1:11434/v1/chat/completions", model: "", needsKey: false, needsModel: true, temperature: true },
-  bridge: { label: "Local bridge (installed opencode, free models)", url: "http://127.0.0.1:8804/v1/chat/completions", model: "", needsKey: false, temperature: true },
+  bridge: { label: "Local bridge (uses the bridge’s own provider)", url: "http://127.0.0.1:8804/v1/chat/completions", model: "", needsKey: false, temperature: true },
   custom: { label: "Custom OpenAI-compatible endpoint", url: "", model: "", needsKey: false, temperature: true },
 };
 

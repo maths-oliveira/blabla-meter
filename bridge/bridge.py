@@ -63,13 +63,24 @@ def local_host(host_header: str) -> bool:
 
 
 # Chrome Web Store build. Development/unpacked builds have a different ID; add those to
-# BBLA_EXTENSION_IDS (comma-separated) when running the bridge locally.
+# BBLA_EXTENSION_IDS (comma-separated) or to ~/.config/bbla/extension-ids (one per line or
+# comma-separated; path overridable with BBLA_EXTENSION_IDS_FILE).
 STORE_EXTENSION_IDS = frozenset({"emjbfdcigbfojhdipapdjaanlkhcjoai"})
+
+
+def extension_ids_file() -> pathlib.Path:
+    return pathlib.Path(os.environ.get("BBLA_EXTENSION_IDS_FILE")
+                        or pathlib.Path.home() / ".config" / "bbla" / "extension-ids")
 
 
 def extension_ids() -> set:
     raw = os.environ.get("BBLA_EXTENSION_IDS", "")
-    return set(STORE_EXTENSION_IDS) | {part.strip().lower() for part in raw.split(",") if part.strip()}
+    try:
+        raw += "," + extension_ids_file().read_text()
+    except OSError:
+        pass
+    ids = {part.split("#", 1)[0].strip().lower() for part in raw.replace("\n", ",").split(",")}
+    return set(STORE_EXTENSION_IDS) | (ids - {""})
 
 
 def allowed(origin: str) -> bool:

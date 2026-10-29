@@ -56,6 +56,17 @@ class BridgeOriginTest(unittest.TestCase):
             self.assertTrue(bridge.allowed("chrome-extension://second-dev-id"))
             self.assertFalse(bridge.allowed("chrome-extension://other-dev-id"))
 
+    def test_development_ids_can_come_from_a_file(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "extension-ids"
+            path.write_text("# unpacked builds\nfile-dev-id\nsecond-file-id  # brave\n")
+            with patch.dict(os.environ, {"BBLA_EXTENSION_IDS_FILE": str(path)}, clear=False):
+                self.assertTrue(bridge.allowed("chrome-extension://file-dev-id"))
+                self.assertTrue(bridge.allowed("chrome-extension://second-file-id"))
+                self.assertFalse(bridge.allowed("chrome-extension://other-dev-id"))
+                self.assertFalse(bridge.allowed("chrome-extension://"))
+
     def test_moz_extension_requires_allowlist(self):
         with patch.dict(os.environ, {"BBLA_EXTENSION_IDS": "firefox-dev-id"}, clear=False):
             self.assertTrue(bridge.allowed("moz-extension://firefox-dev-id"))
