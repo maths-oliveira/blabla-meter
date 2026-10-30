@@ -5,6 +5,8 @@
 [![Chrome Web Store](https://img.shields.io/badge/Chrome%20Web%20Store-Install-4285F4?logo=googlechrome&logoColor=white)](https://chromewebstore.google.com/detail/blabla-meter/emjbfdcigbfojhdipapdjaanlkhcjoai)
 [![Buy me a coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-%E2%98%95-FFDD00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/maths.oliveira)
 
+**[Install Blabla Meter from the Chrome Web Store](https://chromewebstore.google.com/detail/blabla-meter/emjbfdcigbfojhdipapdjaanlkhcjoai)** — works in Chrome, Brave, Edge and other Chromium browsers.
+
 Reads the page you're on and tells you how much of it is worth your attention:
 
 - **Blabla score 0-100** — instant, via one Jev call (no waiting; needs a TypeSafe key in
