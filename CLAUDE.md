@@ -45,16 +45,16 @@ Read `README.md`. Origin: `outline.txt` (keep it).
     Section badges are injected by `showBlockScores` (page.js); the panel re-scores when a
     cheap `pageStats` check shows the body changed under a cached score.
 - `bridge/bridge.py` + `bridge/ai.py` — local OpenAI-style endpoint (port 8804) that runs the provider
-  from `ai.py` (default: installed `opencode` CLI, free models). Refuses web-page origins; allows
+  from `ai.py` (default: Zen/OpenRouter key; the installed `opencode` CLI only with `BBLA_ALLOW_CLI=1`). Refuses web-page origins; allows
   no-origin local tools and only the store extension ID (`emjbfdcigbfojhdipapdjaanlkhcjoai`) plus
-  IDs in `BBLA_EXTENSION_IDS` for unpacked builds. `ai.py` is shared verbatim with rrecipes/usefulnews/wwhats.
+  IDs in `BBLA_EXTENSION_IDS` or `~/.config/bbla/extension-ids` (`BBLA_EXTENSION_IDS_FILE`; tests point it at a temp file) for unpacked builds. `ai.py` is shared verbatim with rrecipes/usefulnews/wwhats.
   `POST /ads/score` takes the key from `X-Typesafe-Key` (or `typesafeKey`) then file/env, plus
   per-request `thresholds` + `model`; `POST /page/score` (bridge/pages.py, same key lookup) scores
   the page on news-style dimensions for the instant score; `POST /ads/key` persists the key (0600).
 - `usage/` (ex cchrome, subtree merge 2026-10-03) — `build_report.py` + `collect/` build
   `dashboard.html` from `report_template.html` (data embedded as `const D=…`). `site_stats.py` reads
   it back for one URL (same `site_key` and category rules as the dashboard). The bridge serves
-  `GET /usage`, `GET /usage/site?url=` (extension origins only) and `POST /usage/rebuild`; the side
+  `GET /usage` (top-level navigation only), `POST /usage/site` (extension origins only; GET returns 403) and `POST /usage/rebuild`; the side
   panel's usage box (`showUsage` in sidepanel.js) calls them and hides itself when the bridge is down.
 
 - `news/` (ex usefulnews, subtree merge 2026-10-03) — Flask app, port **8805** (8801 is taken by
@@ -62,7 +62,7 @@ Read `README.md`. Origin: `outline.txt` (keep it).
 - `shared_rules.py` — `~/.config/bbla/shared-rules.json` = {page, news}. News writes `news` on
   relearn and reads `page` into `memory()["page_rules"]` (in reader_state and profile_hash, never saved
   to news memory). The extension POSTs `page` rules on any `memory.rules` change (storage.onChanged
-  in background.js) and passes `newsRules` to `buildMessages`. Bridge: `GET|POST /memory/rules`.
+  in background.js) and passes `newsRules` to `buildMessages`. Bridge: `POST /memory/rules` (GET returns 403). Writes take a file lock (`<file>.lock`).
   Tests point `BBLA_SHARED_RULES` at a temp file — keep it that way.
 - `run` — bridge + news together.
 

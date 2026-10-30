@@ -167,5 +167,20 @@ class SharedRules(unittest.TestCase):
             webapp.relearn()
         self.assertEqual(shared_rules.read()["news"], ["likes new dev tools"])
 
+    def test_malformed_file_is_ignored(self):
+        import shared_rules
+        p = shared_rules.path()
+        saved = p.read_text() if p.exists() else None
+        try:
+            for raw in ("[]", '"x"', '{"page": "be brief", "updated": 3}'):
+                p.write_text(raw)
+                self.assertEqual(shared_rules.read(), {"page": [], "news": [], "updated": {}})
+            self.assertEqual(shared_rules.write("page", ["ok"])["page"], ["ok"])
+        finally:
+            if saved is None:
+                p.unlink(missing_ok=True)
+            else:
+                p.write_text(saved)
+
 if __name__ == "__main__":
     unittest.main()

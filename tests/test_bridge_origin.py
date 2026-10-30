@@ -19,6 +19,10 @@ sys.path.insert(0, str(ROOT / "bridge"))
 
 import bridge  # noqa: E402
 
+# Keep the tests off the developer's real allowlist (env and ~/.config/bbla/extension-ids).
+os.environ.pop("BBLA_EXTENSION_IDS", None)
+os.environ["BBLA_EXTENSION_IDS_FILE"] = str(Path(__import__("tempfile").mkdtemp()) / "extension-ids")
+
 STORE_ID = "emjbfdcigbfojhdipapdjaanlkhcjoai"
 
 
@@ -60,12 +64,20 @@ class BridgeOriginTest(unittest.TestCase):
         import tempfile
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "extension-ids"
-            path.write_text("# unpacked builds\nfile-dev-id\nsecond-file-id  # brave\n")
+            path.write_text("# unpacked builds, laptop\nfile-dev-id\nsecond-file-id  # brave, old\n")
             with patch.dict(os.environ, {"BBLA_EXTENSION_IDS_FILE": str(path)}, clear=False):
                 self.assertTrue(bridge.allowed("chrome-extension://file-dev-id"))
                 self.assertTrue(bridge.allowed("chrome-extension://second-file-id"))
                 self.assertFalse(bridge.allowed("chrome-extension://other-dev-id"))
                 self.assertFalse(bridge.allowed("chrome-extension://"))
+                # Commas inside comments must not create IDs.
+                self.assertFalse(bridge.allowed("chrome-extension://laptop"))
+                self.assertFalse(bridge.allowed("chrome-extension://old"))
+                # Edits are picked up (cache keyed on mtime).
+                path.write_text("third-file-id\n")
+                os.utime(path, ns=(1, 1))
+                self.assertTrue(bridge.allowed("chrome-extension://third-file-id"))
+                self.assertFalse(bridge.allowed("chrome-extension://file-dev-id"))
 
     def test_moz_extension_requires_allowlist(self):
         with patch.dict(os.environ, {"BBLA_EXTENSION_IDS": "firefox-dev-id"}, clear=False):

@@ -218,7 +218,10 @@ async function showUsage(url) {
   } catch { return; }   // bridge not running: no usage box
   if (tab?.url !== url) return;
   if (!u.ok) {
-    box.innerHTML = `<span class="muted small">⏱ ${esc(u.error)}</span>`;
+    // site_stats errors are strings; bridge refusals (403/400) are {error: {message}}.
+    const msg = typeof u.error === "string" ? u.error : u.error?.message;
+    if (!msg) return;
+    box.innerHTML = `<span class="muted small">⏱ ${esc(msg)}</span>`;
     box.hidden = false;
     return;
   }

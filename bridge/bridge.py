@@ -73,14 +73,32 @@ def extension_ids_file() -> pathlib.Path:
                         or pathlib.Path.home() / ".config" / "bbla" / "extension-ids")
 
 
+_ids_cache = {}   # (path, mtime_ns) -> ids parsed from that file
+
+
+def _file_ids() -> frozenset:
+    p = extension_ids_file()
+    try:
+        key = (str(p), p.stat().st_mtime_ns)
+    except OSError:
+        return frozenset()
+    if key not in _ids_cache:
+        try:
+            text = p.read_text()
+        except OSError:
+            return frozenset()
+        # Strip each line's "# comment" before splitting on commas, so a comma inside a
+        # comment never becomes an allowed ID.
+        _ids_cache.clear()
+        _ids_cache[key] = frozenset(part.strip().lower() for line in text.splitlines()
+                                    for part in line.split("#", 1)[0].split(",")) - {""}
+    return _ids_cache[key]
+
+
 def extension_ids() -> set:
     raw = os.environ.get("BBLA_EXTENSION_IDS", "")
-    try:
-        raw += "," + extension_ids_file().read_text()
-    except OSError:
-        pass
-    ids = {part.split("#", 1)[0].strip().lower() for part in raw.replace("\n", ",").split(",")}
-    return set(STORE_EXTENSION_IDS) | (ids - {""})
+    env_ids = {part.strip().lower() for part in raw.split(",")} - {""}
+    return set(STORE_EXTENSION_IDS) | env_ids | _file_ids()
 
 
 def allowed(origin: str) -> bool:
@@ -142,7 +160,14 @@ class Handler(BaseHTTPRequestHandler):
             return None
         if not allowed(self.headers.get("Origin", "")):
             return self._send(403, {"error": {"message": "origin not allowed"}})
-        self._send(204, {})
+        # 204 must not carry a body, so don't go through _send.
+        self.send_response(204)
+        origin = self.headers.get("Origin", "")
+        if origin:
+            self.send_header("Access-Control-Allow-Origin", origin)
+            self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Typesafe-Key")
+            self.send_header("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
+        self.end_headers()
 
     def do_GET(self):
         if self._bad_host():
@@ -171,7 +196,7 @@ class Handler(BaseHTTPRequestHandler):
             # These used to be readable without an Origin. Use POST instead;
             # POSTs are checked for an allowed extension Origin.
             return self._send(403, {"error": {"message": "use POST with an extension Origin"}})
-        if self.path.rstrip("/") in ("", "/health"):
+        if path.rstrip("/") in ("", "/health"):
             cfg = ai.load_config()
             return self._send(200, {"ok": True, "provider": cfg["provider"], "model": cfg["model"]})
         if path == "/ads/status":
